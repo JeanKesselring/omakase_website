@@ -7,7 +7,6 @@ import {
   Menu,
   Play,
   ShoppingBag,
-  Sparkles,
   X
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -17,7 +16,6 @@ import frontShot from '../Assets/Web/Product_shots/front.jpg';
 import menuShot from '../Assets/Web/Product_shots/menu.jpg';
 import cardsShot from '../Assets/Web/Product_shots/cards.jpg';
 import sleeveShot from '../Assets/Web/Product_shots/sleeve.jpg';
-import cardsBack from '../Assets/Web/cards_back.jpg';
 import gingerCard from '../Assets/Web/Action_cards/ginger.png';
 import sakeCard from '../Assets/Web/Action_cards/sake.png';
 import umeshuCard from '../Assets/Web/Action_cards/umeshu.png';
@@ -36,35 +34,31 @@ import salmonCard from '../Assets/Web/Sushi_cards/salmon.png';
 import shrimpCard from '../Assets/Web/Sushi_cards/shrimp.png';
 import salmonRollCard from '../Assets/Web/Sushi_cards/salmon_roll.png';
 import tunaRollCard from '../Assets/Web/Sushi_cards/tuna_roll.png';
+import octopusCard from '../Assets/Web/Sushi_cards/octopus.png';
+import assortedSashimiCard from '../Assets/Web/Sushi_cards/assorted_sashimi.png';
 import omeletteCard from '../Assets/Web/Sushi_cards/omelette.png';
 import tofuSkinCard from '../Assets/Web/Sushi_cards/tofu.png';
 import cucumberRollCard from '../Assets/Web/Sushi_cards/cucumber_roll.png';
 import karaageCard from '../Assets/Web/Sushi_cards/Karaage.png';
-import productVideoA from '../Assets/Web/video/product-loop-1.mp4';
-import productVideoB from '../Assets/Web/video/product-loop-2.mp4';
-import productPosterA from '../Assets/Web/video_posters/product-loop-1.jpg';
-import productPosterB from '../Assets/Web/video_posters/product-loop-2.jpg';
-import flowDraw from '../Assets/Web/how_to/draw.jpg';
-import flowAction from '../Assets/Web/how_to/action.jpg';
-import flowSwap from '../Assets/Web/how_to/swap.jpg';
-import flowRotate from '../Assets/Web/how_to/rotate.jpg';
-import scoringOne from '../Assets/Web/how_to/scoring.jpg';
-import scoringTwo from '../Assets/Web/how_to/scoring2.jpg';
-import scoringThree from '../Assets/Web/how_to/scoring3.jpg';
-import scoringFour from '../Assets/Web/how_to/scoring4.jpg';
-import scoringFive from '../Assets/Web/how_to/scoring5.jpg';
+import flowDraw from '../Assets/Web/gifs/draw.gif';
+import flowAction from '../Assets/Web/gifs/act.gif';
+import flowSwap from '../Assets/Web/gifs/swap.gif';
+import flowRotate from '../Assets/Web/gifs/move.gif';
 import tokoroLogo from '../Assets/Web/retailers/tokoro.png';
 import neverStopReadingLogo from '../Assets/Web/retailers/never-stop-reading.png';
-import analphLogo from '../Assets/Web/retailers/analph.ico';
+import homuLogo from '../Assets/Web/retailers/Homu.png';
+import analphLogo from '../Assets/Web/retailers/thumb_analph_kopf_mail_2.png';
 import kamiyaLogo from '../Assets/Web/retailers/kamiya.png';
 import volkshausLogo from '../Assets/Web/retailers/buchhandlung-volkshaus.ico';
 import mudacLogo from '../Assets/Web/retailers/mudac.png';
 import yugenlabLogo from '../Assets/Web/retailers/yugenlab.svg';
 import chuoLogo from '../Assets/Web/retailers/chuo.ico';
 import noiLogo from '../Assets/Web/retailers/noi-libreria.png';
+import loveStoryLogo from '../Assets/Web/retailers/lovestory.webp';
 import alaskaLogo from '../Assets/Web/retailers/alaska-libreria.png';
 import gamesLogo from '../Assets/Web/retailers/games-kobenhavn.png';
 import gudbergNergerLogo from '../Assets/Web/retailers/gudberg-nerger.png';
+import poromagiaLogo from '../Assets/Web/retailers/poromagia.png';
 import rulebookPdf from '../Rules.pdf';
 import shops from './data/shops.json';
 import { dictionaries, localeLabels } from './i18n.js';
@@ -95,6 +89,8 @@ const sushiCardImages = {
   Shrimp: shrimpCard,
   'Salmon Roll': salmonRollCard,
   'Tuna Roll': tunaRollCard,
+  Octopus: octopusCard,
+  'Assorted Sashimi': assortedSashimiCard,
   Omelette: omeletteCard,
   'Tofu Skin': tofuSkinCard,
   'Cucumber Roll': cucumberRollCard,
@@ -104,15 +100,112 @@ const sushiCardImages = {
 const productMedia = [
   { type: 'image', titleKey: 'menu', src: menuShot },
   { type: 'image', titleKey: 'cards', src: cardsShot },
-  { type: 'image', titleKey: 'sleeve', src: sleeveShot },
-  { type: 'video', titleKey: 'videoOne', src: productVideoA, poster: productPosterA },
-  { type: 'video', titleKey: 'videoTwo', src: productVideoB, poster: productPosterB }
+  { type: 'image', titleKey: 'sleeve', src: sleeveShot }
 ];
 
 const flowImages = [flowDraw, flowAction, flowSwap, flowRotate];
-const scoringImages = [scoringOne, scoringTwo, scoringThree, scoringFour, scoringFive];
+
+const scoringCardLayouts = [
+  {
+    total: 4000,
+    cards: [
+      { kind: 'sushi', name: 'Octopus' },
+      { kind: 'sushi', name: 'Conger Eel' },
+      { kind: 'sushi', name: 'Crab' },
+      { kind: 'sushi', name: 'Tuna' },
+      { kind: 'sushi', name: 'Tuna' },
+      { kind: 'sushi', name: 'Salmon Roll' },
+      { kind: 'sushi', name: 'Karaage' },
+      { kind: 'action', name: 'Umeshu' }
+    ],
+    math: [
+      { label: 'Octopus', amount: 1100 },
+      { label: 'Conger Eel', amount: 700 },
+      { label: 'Crab', amount: 600 },
+      { label: 'Tuna x2', amount: 800 },
+      { label: 'Salmon Roll', amount: 300 },
+      { label: 'Karaage', amount: 500 },
+      { label: 'Umeshu', amount: 0 }
+    ]
+  },
+  {
+    total: 7000,
+    cards: [
+      { kind: 'sushi', name: 'Fatty Tuna' },
+      { kind: 'sushi', name: 'Conger Eel' },
+      { kind: 'sushi', name: 'Crab' },
+      { kind: 'sushi', name: 'Tuna' },
+      { kind: 'sushi', name: 'Salmon Roe' },
+      { kind: 'sushi', name: 'Salmon' },
+      { kind: 'action', name: 'Shoyu' },
+      { kind: 'sushi', name: 'Karaage', doubled: true },
+      { kind: 'sushi', name: 'Karaage' },
+      { kind: 'action', name: 'Ginger' }
+    ],
+    math: [
+      { label: 'Omakase Set', amount: 6000 },
+      { label: 'Karaage x2, one doubled by Shoyu', amount: 1000 },
+      { label: 'Ginger', amount: 0 }
+    ]
+  },
+  {
+    total: 5500,
+    cards: [
+      { kind: 'sushi', name: 'Assorted Sashimi', doubled: true },
+      { kind: 'sushi', name: 'Assorted Sashimi' },
+      { kind: 'sushi', name: 'Conger Eel', doubled: true },
+      { kind: 'sushi', name: 'Conger Eel' },
+      { kind: 'sushi', name: 'Salmon' },
+      { kind: 'sushi', name: 'Shrimp' },
+      { kind: 'sushi', name: 'Tuna Roll' },
+      { kind: 'action', name: 'Shoyu' },
+      { kind: 'action', name: 'Shoyu' }
+    ],
+    math: [
+      { label: 'Assorted Sashimi x2, one doubled', amount: 3000 },
+      { label: 'Conger Eel x2, one doubled', amount: 1400 },
+      { label: 'Salmon', amount: 400 },
+      { label: 'Shrimp', amount: 400 },
+      { label: 'Tuna Roll', amount: 300 }
+    ]
+  },
+  {
+    total: 2000,
+    cards: [
+      { kind: 'sushi', name: 'Omelette' },
+      { kind: 'sushi', name: 'Tofu Skin' },
+      { kind: 'sushi', name: 'Cucumber Roll' },
+      { kind: 'sushi', name: 'Karaage' },
+      { kind: 'action', name: 'Shoyu' }
+    ],
+    math: [
+      { label: "Kid's Set", amount: 2000 },
+      { label: 'Shoyu with no eligible sushi', amount: 0 }
+    ]
+  },
+  {
+    total: 8000,
+    cards: [
+      { kind: 'sushi', name: 'Fatty Tuna' },
+      { kind: 'sushi', name: 'Conger Eel' },
+      { kind: 'sushi', name: 'Crab' },
+      { kind: 'sushi', name: 'Tuna' },
+      { kind: 'sushi', name: 'Salmon Roe' },
+      { kind: 'sushi', name: 'Salmon' },
+      { kind: 'sushi', name: 'Omelette' },
+      { kind: 'sushi', name: 'Tofu Skin' },
+      { kind: 'sushi', name: 'Cucumber Roll' },
+      { kind: 'sushi', name: 'Karaage' }
+    ],
+    math: [
+      { label: 'Omakase Set', amount: 6000 },
+      { label: "Kid's Set", amount: 2000 }
+    ]
+  }
+];
 
 const retailerLogos = {
+  'home-japanese-living': homuLogo,
   tokoro: tokoroLogo,
   'never-stop-reading': neverStopReadingLogo,
   analph: analphLogo,
@@ -122,9 +215,11 @@ const retailerLogos = {
   yugenlab: yugenlabLogo,
   chuo: chuoLogo,
   'noi-libreria': noiLogo,
+  'love-story-of-berlin': loveStoryLogo,
   'alaska-libreria': alaskaLogo,
   'games-kobenhavn': gamesLogo,
-  'gudberg-nerger': gudbergNergerLogo
+  'gudberg-nerger': gudbergNergerLogo,
+  poromagia: poromagiaLogo
 };
 
 export function App({ route, navigate }) {
@@ -221,9 +316,14 @@ function HomePage({ t, go }) {
           <div className="floating-card card-two">
             <img src={shoyuCard} alt="Shoyu action card" />
           </div>
+          <div className="floating-card card-three">
+            <img src={salmonRoeCard} alt="Salmon Roe sushi card" />
+          </div>
+          <div className="floating-card card-four">
+            <img src={sakeCard} alt="Sake action card" />
+          </div>
         </div>
         <div className="hero-copy">
-          <p className="eyebrow"><Sparkles size={16} /> {t.hero.eyebrow}</p>
           <h1>Omakase</h1>
           <p className="hero-lede">{t.hero.lede}</p>
           <div className="hero-actions">
@@ -250,20 +350,9 @@ function ProductMedia({ t }) {
     <section className="section media-section" id="media" aria-label={t.media.aria}>
       <div className="media-grid">
         {productMedia.map((item) => (
-          <article className={`media-tile ${item.type === 'video' ? 'video-tile' : ''}`} key={item.titleKey}>
+          <article className="media-tile" key={item.titleKey}>
             <div className="media-tile-frame">
-              {item.type === 'video' ? (
-                <video
-                  src={item.src}
-                  poster={item.poster}
-                  controls
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : (
-                <img src={item.src} alt={t.media.items[item.titleKey]} />
-              )}
+              <img src={item.src} alt={t.media.items[item.titleKey]} />
             </div>
             <h2>{t.media.items[item.titleKey]}</h2>
           </article>
@@ -275,14 +364,11 @@ function ProductMedia({ t }) {
 
 function HomeRulesPreview({ t, go }) {
   const [activeStep, setActiveStep] = useState(0);
-  const current = t.preview.steps[activeStep];
 
   return (
     <section className="section flow-section">
       <div className="section-heading">
         <p className="eyebrow">{t.preview.eyebrow}</p>
-        <h2>{t.preview.title}</h2>
-        <p>{t.preview.body}</p>
       </div>
       <div className="flow-stepper">
         <div className="flow-visual">
@@ -313,6 +399,9 @@ function HomeRulesPreview({ t, go }) {
 function RulesPage({ t, locale }) {
   const [selectedCard, setSelectedCard] = useState(rules.action_cards[0]);
   const [previewCard, setPreviewCard] = useState(null);
+  const [cornerCasesOpen, setCornerCasesOpen] = useState(false);
+  const manualSections = t.rules.sections.filter((_, index) => index !== 5);
+  const scoringSection = t.rules.sections[5];
   const actionCopy = t.actionCards[selectedCard.name] || {
     effect: selectedCard.effect,
     detail: selectedCard.scoring_effect || selectedCard.after_effect || ''
@@ -337,18 +426,25 @@ function RulesPage({ t, locale }) {
       </section>
 
       <section className="section rule-manual">
-        {t.rules.sections.map((section) => (
+        {manualSections.map((section, index) => (
           <article className="manual-block" key={section.title}>
-            <h2>{section.title}</h2>
-            <p>{section.body}</p>
-            {section.items && (
-              <ul>
-                {section.items.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            )}
+            <div>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h2>{section.title}</h2>
+            </div>
+            <div>
+              <p>{section.body}</p>
+              {section.items && (
+                <ul>
+                  {section.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              )}
+            </div>
           </article>
         ))}
       </section>
+
+      <RulesFlowStrip t={t} />
 
       <section className="section action-section">
         <div className="section-heading">
@@ -362,7 +458,10 @@ function RulesPage({ t, locale }) {
               <button
                 key={card.name}
                 className={selectedCard.name === card.name ? 'selected' : ''}
-                onClick={() => setSelectedCard(card)}
+                onClick={() => {
+                  setSelectedCard(card);
+                  setCornerCasesOpen(false);
+                }}
               >
                 <img src={actionCardImages[card.name]} alt={card.name} />
               </button>
@@ -375,6 +474,23 @@ function RulesPage({ t, locale }) {
               <h3>{selectedCard.name}</h3>
               <p>{actionCopy.effect}</p>
               {actionCopy.detail && <p className="muted">{actionCopy.detail}</p>}
+              {actionCopy.cornerCases && (
+                <div className="action-corner-cases">
+                  <button
+                    type="button"
+                    onClick={() => setCornerCasesOpen(!cornerCasesOpen)}
+                    aria-expanded={cornerCasesOpen}
+                  >
+                    <span>{t.rules.cornerCasesLabel}</span>
+                    <span aria-hidden="true">{cornerCasesOpen ? '−' : '+'}</span>
+                  </button>
+                  {cornerCasesOpen && (
+                    <ul>
+                      {actionCopy.cornerCases.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           </article>
         </div>
@@ -411,17 +527,43 @@ function RulesPage({ t, locale }) {
       </section>
 
       <section className="section scoring-examples">
+        {scoringSection && (
+          <article className="scoring-rule-block">
+            <div>
+              <p className="eyebrow">{t.rules.scoringEyebrow}</p>
+              <h2>{scoringSection.title}</h2>
+            </div>
+            <div>
+              <p>{scoringSection.body}</p>
+              {scoringSection.items && (
+                <ul>
+                  {scoringSection.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              )}
+            </div>
+          </article>
+        )}
         <div className="section-heading">
-          <p className="eyebrow">{t.rules.scoringEyebrow}</p>
           <h2>{t.rules.scoringTitle}</h2>
           <p>{t.rules.scoringBody}</p>
         </div>
         <div className="score-example-grid">
           {t.rules.scoringExamples.map((example, index) => (
             <article className="score-example" key={example.title}>
-              <img src={scoringImages[index]} alt="" />
+              <ScoringCardRow cards={scoringCardLayouts[index].cards} onPreview={setPreviewCard} />
               <div>
-                <h3>{example.title}</h3>
+                <ul className="score-math">
+                  {scoringCardLayouts[index].math.map((line) => (
+                    <li key={line.label}>
+                      <span>{line.label}</span>
+                      <strong>{line.amount.toLocaleString(locale)} ¥</strong>
+                    </li>
+                  ))}
+                </ul>
+                <div className="score-example-title">
+                  <h3>{example.title}</h3>
+                  <strong>{scoringCardLayouts[index].total.toLocaleString(locale)} ¥</strong>
+                </div>
                 <p>{example.body}</p>
               </div>
             </article>
@@ -435,6 +577,51 @@ function RulesPage({ t, locale }) {
         </button>
       )}
     </>
+  );
+}
+
+function RulesFlowStrip({ t }) {
+  return (
+    <section className="section rules-flow">
+      <div className="section-heading">
+        <p className="eyebrow">{t.preview.eyebrow}</p>
+      </div>
+      <div className="rules-gif-grid">
+        {t.preview.steps.map((step, index) => (
+          <article key={step.title} className="rules-gif-step">
+            <img src={flowImages[index]} alt="" loading="lazy" />
+            <div>
+              <span>{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ScoringCardRow({ cards, onPreview }) {
+  return (
+    <div className="score-card-row">
+      {cards.map((card, index) => {
+        const src = card.kind === 'action' ? actionCardImages[card.name] : sushiCardImages[card.name];
+
+        return (
+          <button
+            type="button"
+            className={`score-mini-card ${card.kind}`}
+            key={`${card.name}-${index}`}
+            onClick={() => onPreview({ name: card.name, src })}
+            aria-label={card.name}
+          >
+            <img src={src} alt="" />
+            {card.doubled && <span className="card-count">x2</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

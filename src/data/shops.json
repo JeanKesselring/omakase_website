@@ -10,7 +10,7 @@
     "websiteUrl": null,
     "productUrl": null,
     "sellsOnline": false,
-    "logoId": null,
+    "logoId": "home-japanese-living",
     "notes": "Basel retailer. Exact address and logo still need confirmation."
   },
   {
@@ -150,7 +150,7 @@
     "websiteUrl": null,
     "productUrl": null,
     "sellsOnline": false,
-    "logoId": null,
+    "logoId": "love-story-of-berlin",
     "notes": "Bookshop in Berlin. Website and logo still need confirmation."
   },
   {
@@ -220,7 +220,7 @@
     "websiteUrl": "https://www.poromagia.com",
     "productUrl": null,
     "sellsOnline": false,
-    "logoId": null,
+    "logoId": "poromagia",
     "notes": "Game shop in Helsinki. Website blocks automated logo lookup."
   }
 ]
