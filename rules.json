@@ -1,0 +1,602 @@
+{
+  "game": {
+    "title": "Omakase",
+    "source_files": [
+      "Rules.pdf",
+      "menuleporelloV2.0.pdf"
+    ],
+    "edition": "First Edition",
+    "copyright_year": 2025,
+    "designer": "Jean Kesselring",
+    "illustrator": "Jean Kesselring",
+    "website": "www.omakasegame.com"
+  },
+  "objective": "Collect the most valuable sushi cards and complete sushi sets. The player with the highest score at the end wins.",
+  "setup": {
+    "starting_hand_size": 1,
+    "conveyor_belt_size": 6,
+    "steps": [
+      "Shuffle the cards.",
+      "Deal one card to each player.",
+      "Place six face-up cards in a row to form the sushi conveyor belt.",
+      "Put the remaining cards face-down in a deck at one end of the conveyor belt.",
+      "Keep a trash pile for used and discarded cards."
+    ]
+  },
+  "zones": {
+    "deck": "Face-down stack of cards to draw from.",
+    "conveyor_belt": "Six face-up cards in a row.",
+    "trash": "Pile of used and discarded cards.",
+    "player_hands": "Cards held by players. A player's hand is visible only to that player.",
+    "in_front_of_player": "Persistent played cards such as Matcha."
+  },
+  "deck_lifecycle": {
+    "full_deck_playthroughs": "number_of_players - 1",
+    "examples": [
+      {
+        "players": 2,
+        "full_deck_playthroughs": 1
+      },
+      {
+        "players": 3,
+        "full_deck_playthroughs": 2
+      },
+      {
+        "players": 4,
+        "full_deck_playthroughs": 3
+      }
+    ],
+    "reshuffle_rule": "If the deck runs out and remaining playthroughs are available, shuffle the trash pile to form a new deck before the next draw.",
+    "end_when_no_draw_possible": "If no reshuffles remain and a player would draw a card but cannot, the game immediately ends.",
+    "action_draws": "If an action requires drawing cards and the deck runs out, reshuffle first if reshuffles remain. The action must be completed as far as possible under the draw rules."
+  },
+  "hand_size": {
+    "base_maximum": 8,
+    "discard_timing": "At the end of your turn, if you have more cards than your maximum hand size, discard down to that maximum.",
+    "discard_restriction": "When discarding, choose cards other than Ginger.",
+    "increase_rule": "Each Matcha card played in front of you increases your maximum hand size by one.",
+    "formula": "8 + number of Matcha cards in front of you"
+  },
+  "turn_sequence": [
+    {
+      "step": 1,
+      "name": "Draw a Card",
+      "rule": "Draw one card from the deck."
+    },
+    {
+      "step": 2,
+      "name": "Optional Action Card",
+      "rule": "If you have an action card, you may play one before exchanging with the conveyor belt. Most played action cards go to the trash, with exceptions such as Shoyu and Matcha."
+    },
+    {
+      "step": 3,
+      "name": "Exchange a Card",
+      "rule": "Exchange one card from your hand with any card on the conveyor belt.",
+      "restrictions": [
+        "You cannot exchange two identical cards.",
+        "You cannot exchange Ginger this way unless Ginger is your only card and you had zero cards before drawing it this turn."
+      ]
+    },
+    {
+      "step": 4,
+      "name": "Optional Action Card",
+      "rule": "If you did not already play an action card this turn, you may play one after the exchange, including an action card just picked up from the conveyor belt."
+    },
+    {
+      "step": 5,
+      "name": "Move the Conveyor Belt",
+      "rule": "Add a new card to the conveyor belt, move all cards on the belt one spot to the right, and put the card that falls off the end into the trash."
+    }
+  ],
+  "action_card_limit": {
+    "maximum_played_per_turn": 1,
+    "timing": "An action card may be played either before or after exchanging a card with the conveyor belt."
+  },
+  "inventory": {
+    "total_sushi_cards": 45,
+    "total_action_cards": 17,
+    "sushi_cards": [
+      {
+        "name": "Assorted Sashimi",
+        "price_yen": 1500,
+        "count": 1,
+        "sets": []
+      },
+      {
+        "name": "Premium Eel",
+        "price_yen": 1200,
+        "count": 1,
+        "sets": []
+      },
+      {
+        "name": "Octopus",
+        "price_yen": 1100,
+        "count": 1,
+        "sets": []
+      },
+      {
+        "name": "Fatty Tuna",
+        "price_yen": 1000,
+        "count": 1,
+        "sets": [
+          "Omakase Set"
+        ]
+      },
+      {
+        "name": "Conger Eel",
+        "price_yen": 700,
+        "count": 2,
+        "sets": [
+          "Omakase Set",
+          "Sakura Set"
+        ]
+      },
+      {
+        "name": "Crab",
+        "price_yen": 600,
+        "count": 2,
+        "sets": [
+          "Omakase Set",
+          "Sakura Set"
+        ]
+      },
+      {
+        "name": "Karaage",
+        "price_yen": 500,
+        "count": 3,
+        "sets": [
+          "Kid's Set"
+        ]
+      },
+      {
+        "name": "Salmon Roe",
+        "price_yen": 500,
+        "count": 3,
+        "sets": [
+          "Omakase Set",
+          "Ume Set"
+        ]
+      },
+      {
+        "name": "Tuna",
+        "price_yen": 400,
+        "count": 3,
+        "sets": [
+          "Omakase Set",
+          "Sakura Set"
+        ]
+      },
+      {
+        "name": "Salmon",
+        "price_yen": 400,
+        "count": 3,
+        "sets": [
+          "Omakase Set",
+          "Ume Set"
+        ]
+      },
+      {
+        "name": "Shrimp",
+        "price_yen": 400,
+        "count": 3,
+        "sets": [
+          "Sakura Set",
+          "Ume Set"
+        ]
+      },
+      {
+        "name": "Tuna Roll",
+        "price_yen": 300,
+        "count": 4,
+        "sets": [
+          "Sakura Set",
+          "Ume Set"
+        ]
+      },
+      {
+        "name": "Salmon Roll",
+        "price_yen": 300,
+        "count": 4,
+        "sets": [
+          "Sakura Set",
+          "Ume Set"
+        ]
+      },
+      {
+        "name": "Cucumber Roll",
+        "price_yen": 300,
+        "count": 4,
+        "sets": [
+          "Kid's Set"
+        ]
+      },
+      {
+        "name": "Omelette",
+        "price_yen": 200,
+        "count": 5,
+        "sets": [
+          "Ume Set",
+          "Kid's Set"
+        ]
+      },
+      {
+        "name": "Tofu Skin",
+        "price_yen": 200,
+        "count": 5,
+        "sets": [
+          "Kid's Set"
+        ]
+      }
+    ],
+    "action_cards": [
+      {
+        "name": "Ginger",
+        "count": 1
+      },
+      {
+        "name": "Sake",
+        "count": 2
+      },
+      {
+        "name": "Umeshu",
+        "count": 2
+      },
+      {
+        "name": "Chef's Choice",
+        "count": 2
+      },
+      {
+        "name": "Wasabi",
+        "count": 2
+      },
+      {
+        "name": "Matcha",
+        "count": 2
+      },
+      {
+        "name": "Chopsticks",
+        "count": 3
+      },
+      {
+        "name": "Fork",
+        "count": 1
+      },
+      {
+        "name": "Shoyu",
+        "count": 2
+      }
+    ]
+  },
+  "sushi_sets": [
+    {
+      "name": "Omakase Set",
+      "value_yen": 6000,
+      "members": [
+        "Fatty Tuna",
+        "Conger Eel",
+        "Crab",
+        "Tuna",
+        "Salmon Roe",
+        "Salmon"
+      ]
+    },
+    {
+      "name": "Sakura Set",
+      "value_yen": 4500,
+      "members": [
+        "Conger Eel",
+        "Crab",
+        "Shrimp",
+        "Salmon Roll",
+        "Tuna",
+        "Tuna Roll"
+      ]
+    },
+    {
+      "name": "Ume Set",
+      "value_yen": 3500,
+      "members": [
+        "Salmon Roe",
+        "Salmon",
+        "Shrimp",
+        "Salmon Roll",
+        "Omelette",
+        "Tuna Roll"
+      ]
+    },
+    {
+      "name": "Kid's Set",
+      "value_yen": 2000,
+      "members": [
+        "Omelette",
+        "Tofu Skin",
+        "Cucumber Roll",
+        "Karaage"
+      ]
+    }
+  ],
+  "sushi_cards": {
+    "unique_count": 16,
+    "total_count": 45,
+    "price_range_yen": {
+      "minimum": 200,
+      "maximum": 1500
+    },
+    "rarity_rule": "The higher the price, the rarer the sushi card.",
+    "card_fields": [
+      {
+        "name": "set_indicators",
+        "description": "Labels in the top-right corner indicate which set or sets the sushi belongs to. A sushi that belongs to two sets has two colored labels."
+      },
+      {
+        "name": "price",
+        "description": "Price in Japanese yen."
+      },
+      {
+        "name": "name",
+        "description": "Name in English and Japanese."
+      }
+    ],
+    "set_membership_rule": "Most sushi cards belong to one or two sets. Some rare and expensive sushi cards do not belong to any set."
+  },
+  "action_cards": [
+    {
+      "name": "Ginger",
+      "type": "negative",
+      "playable": false,
+      "effect": "No special ability. It occupies space in your hand.",
+      "restrictions": [
+        "Cannot be exchanged for any card on the conveyor belt, except when the player had zero cards, drew Ginger, and must exchange.",
+        "Cannot be discarded, even if it is your only card."
+      ],
+      "ways_to_remove": [
+        "Sake",
+        "Umeshu",
+        "Chef's Choice"
+      ],
+      "scoring_value_yen": 0
+    },
+    {
+      "name": "Sake",
+      "type": "played_from_hand",
+      "effect": "Choose an eligible opponent and draw one random card from their hand without looking. Then choose a card from your own hand; that opponent must draw that card.",
+      "target_restrictions": [
+        "Cannot target a player with check protection.",
+        "Cannot target a player with zero cards."
+      ],
+      "after_effect": "Discard Sake into the trash."
+    },
+    {
+      "name": "Umeshu",
+      "type": "played_from_hand",
+      "effect": "Choose an eligible opponent. Combine both players' hands into one pile and shuffle it. Starting with you, alternate drawing from the pile until it is empty.",
+      "target_restrictions": [
+        "Cannot target a player with check protection.",
+        "Cannot target a player with zero cards."
+      ],
+      "after_effect": "Discard Umeshu into the trash.",
+      "scoring_value_yen": 0
+    },
+    {
+      "name": "Chef's Choice",
+      "type": "played_from_hand",
+      "effect": "Draw three cards from the deck. Then choose any two cards from your hand, including cards just drawn, and place them back into the deck in any positions.",
+      "draw_rule": "If the deck runs out during the draw and reshuffles remain, reshuffle the trash into a new deck before continuing the draw.",
+      "after_effect": "Discard Chef's Choice into the trash."
+    },
+    {
+      "name": "Wasabi",
+      "type": "triggered_on_draw",
+      "effect": "When you draw Wasabi, you must skip your next turn.",
+      "triggers_when_acquired_from": [
+        "deck",
+        "another player's hand",
+        "Sake",
+        "Umeshu"
+      ],
+      "does_not_trigger_when_acquired_from": [
+        "conveyor belt"
+      ],
+      "stacking_rule": "The effect stacks if you acquire multiple Wasabi cards in a single turn.",
+      "final_turn_rule": "If Wasabi makes you skip your final turn after check has been called, that final turn is consumed."
+    },
+    {
+      "name": "Matcha",
+      "type": "played_from_hand",
+      "effect": "Draw one card and place Matcha in front of you.",
+      "draw_rule": "If the deck is empty and reshuffles remain, reshuffle before drawing.",
+      "persistent_effect": "Increase your maximum hand size by one for each Matcha card in front of you.",
+      "after_effect": "Matcha remains in front of you instead of going to the trash."
+    },
+    {
+      "name": "Chopsticks",
+      "type": "played_from_hand",
+      "effect": "Choose an eligible opponent and draw one random card from their hand.",
+      "target_restrictions": [
+        "Cannot target a player with check protection.",
+        "Cannot target a player with zero cards."
+      ],
+      "after_effect": "Discard Chopsticks into the trash."
+    },
+    {
+      "name": "Fork",
+      "type": "played_from_hand",
+      "effect": "All other players except any player with check protection must discard their most expensive sushi card.",
+      "tie_rule": "If an affected player has multiple most expensive sushi cards tied in price, that player chooses which tied card to discard.",
+      "after_effect": "Discard Fork into the trash. Discarded sushi cards are placed in the trash pile."
+    },
+    {
+      "name": "Shoyu",
+      "type": "held_until_scoring",
+      "effect": "Keep Shoyu in your hand until the end of the game.",
+      "scoring_effect": "At scoring, double the value of your most expensive sushi card that is not part of a completed set.",
+      "tie_rule": "If multiple eligible sushi cards tie for most expensive, the owner chooses which one each Shoyu applies to.",
+      "restrictions": [
+        "Only one Shoyu may be applied per sushi card.",
+        "If you have multiple Shoyu cards, each must be applied to a different eligible sushi card.",
+        "Shoyu has no effect if all of your sushi cards are part of scored sets."
+      ],
+      "scoring_value_yen": 0
+    }
+  ],
+  "ending_the_game": {
+    "conditions": [
+      {
+        "name": "No Draw Possible",
+        "rule": "After the allowed number of full deck playthroughs has been exhausted, the game immediately ends when a player would draw a card but cannot."
+      },
+      {
+        "name": "Check Called",
+        "rule": "When a player completes a sushi set during their own turn, that player may call the check as they conclude their turn. After the check is called, each other player gets one final turn."
+      }
+    ],
+    "check_timing": [
+      "Only a set completed during your own turn can trigger check.",
+      "You must complete all mandatory actions of your turn before calling check.",
+      "You may still play the optional post-exchange action card before calling check, if you have not already played an action card this turn."
+    ],
+    "check_protection": {
+      "rule": "Once a player calls the check, they cannot be affected by action cards from other players.",
+      "targeting": "Action cards that target a player cannot target the player with check protection.",
+      "fork_interaction": "Fork can still be played, but it does not affect the player with check protection."
+    }
+  },
+  "scoring": {
+    "general_rule": "Add up the value of sushi cards and completed sets. The highest total wins.",
+    "tie_rule": "If players tie on score, they tie; there is no winner among tied players.",
+    "duplicate_rule": "Multiple copies of the same sushi card each count separately unless they are being counted as part of a completed set.",
+    "sets": {
+      "completed_set_rule": "When you have a completed sushi set, do not add the prices of the individual sushi cards in that set. Count only the value of the set as a whole.",
+      "multiple_sets_rule": "If you complete multiple non-overlapping sets, you may count all completed sets.",
+      "duplicate_sets_rule": "If you have enough duplicate sushi cards to complete the same named set more than once, you may score that set more than once.",
+      "overlap_rule": "If two possible completed sets require the same sushi card, choose which set uses that card; the same physical card cannot count toward both sets.",
+      "extra_sushi_rule": "Sushi cards not included in a scored set are added at their individual prices."
+    },
+    "action_cards": {
+      "default_rule": "Most action cards have no price and do not count toward the score.",
+      "shoyu_exception": "Shoyu is the only action card that affects hand value by doubling eligible sushi cards."
+    },
+    "examples": [
+      {
+        "name": "No completed sets",
+        "items": [
+          {
+            "quantity": 1,
+            "name": "Octopus",
+            "points_yen": 1100
+          },
+          {
+            "quantity": 1,
+            "name": "Eel",
+            "points_yen": 700
+          },
+          {
+            "quantity": 1,
+            "name": "Crab",
+            "points_yen": 600
+          },
+          {
+            "quantity": 2,
+            "name": "Tuna",
+            "points_yen": 800
+          },
+          {
+            "quantity": 1,
+            "name": "Salmon Roll",
+            "points_yen": 300
+          },
+          {
+            "quantity": 1,
+            "name": "Karaage",
+            "points_yen": 500
+          },
+          {
+            "quantity": 1,
+            "name": "Umeshu",
+            "points_yen": 0
+          }
+        ],
+        "total_yen": 4000
+      },
+      {
+        "name": "Completed Omakase Set with Shoyu",
+        "items": [
+          {
+            "quantity": 1,
+            "name": "Omakase Set",
+            "points_yen": 6000
+          },
+          {
+            "quantity": 2,
+            "name": "Karaage",
+            "effect": "Shoyu doubles one Karaage from 500 yen to 1000 yen.",
+            "points_yen": 1000
+          },
+          {
+            "quantity": 1,
+            "name": "Ginger",
+            "points_yen": 0
+          }
+        ],
+        "total_yen": 7000
+      },
+      {
+        "name": "Two Shoyu cards, no sets",
+        "items": [
+          {
+            "quantity": 2,
+            "name": "Assorted Sashimi",
+            "effect": "One Shoyu doubles one Assorted Sashimi from 1500 yen to 3000 yen.",
+            "points_yen": 3000
+          },
+          {
+            "quantity": 2,
+            "name": "Eel",
+            "effect": "One Shoyu doubles one Eel from 700 yen to 1400 yen.",
+            "points_yen": 1400
+          },
+          {
+            "quantity": 1,
+            "name": "Salmon",
+            "points_yen": 400
+          },
+          {
+            "quantity": 1,
+            "name": "Shrimp",
+            "points_yen": 400
+          },
+          {
+            "quantity": 1,
+            "name": "Tuna Roll",
+            "points_yen": 300
+          }
+        ],
+        "total_yen": 5500
+      },
+      {
+        "name": "Kids Set with unusable Shoyu",
+        "items": [
+          {
+            "quantity": 1,
+            "name": "Kid's Set",
+            "points_yen": 2000
+          },
+          {
+            "quantity": 1,
+            "name": "Shoyu",
+            "effect": "No eligible sushi card remains outside the set, so Shoyu adds no value.",
+            "points_yen": 0
+          }
+        ],
+        "total_yen": 2000
+      }
+    ]
+  },
+  "corner_cases": {
+    "ginger_only_after_zero_card_draw": "If a player has zero cards, draws Ginger, and must exchange a card, they may exchange Ginger. This is the only case where Ginger can be exchanged through the normal exchange step.",
+    "protected_player_targeting": "A player with check protection cannot be targeted by player-targeting action cards.",
+    "zero_card_targeting": "A player with zero cards cannot be chosen for Sake, Umeshu, or Chopsticks.",
+    "wasabi_final_turn": "A final turn skipped by Wasabi is still consumed.",
+    "most_expensive_ties": "When an effect requires choosing among tied most expensive sushi cards, the owner of those cards chooses."
+  }
+}
