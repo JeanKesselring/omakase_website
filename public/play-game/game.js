@@ -1207,7 +1207,7 @@ async function runSyncAiTurn() {
         if (card) {
           const name = cardName(card);
           setPhaseMsg(`Chef plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
-          await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 1400);
+          await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 2800);
         }
       } else {
         setPhaseMsg('Chef skips action…');
@@ -1300,7 +1300,7 @@ async function runMctsAiTurn() {
         if (card) {
           const name = cardName(card);
           setPhaseMsg(`Chef plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
-          await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 1000);
+          await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 2000);
         }
       } else {
         await delay(300);
@@ -1468,7 +1468,7 @@ async function animateBeltDeal() {
 }
 
 // ── Action card play animation ────────────────────────────────────────────────
-function playActionCardAnimation(name, displayName, holdMs = 820) {
+function playActionCardAnimation(name, displayName, holdMs = 1640) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.className = 'action-play-overlay';

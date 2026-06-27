@@ -167,34 +167,32 @@
 
     </section>
 
-    <!-- Phase bar -->
-    <div class="phase-bar" role="status" aria-live="polite">
-      <div class="phase-pips" aria-label="Current phase">
-        <div class="phase-step">
-          <span class="phase-pip" data-phase="0">1</span>
-          <span class="phase-step__label">Action</span>
-        </div>
-        <span class="phase-sep" aria-hidden="true">›</span>
-        <div class="phase-step">
-          <span class="phase-pip" data-phase="1">2</span>
-          <span class="phase-step__label">Swap</span>
-        </div>
-        <span class="phase-sep" aria-hidden="true">›</span>
-        <div class="phase-step">
-          <span class="phase-pip" data-phase="2">3</span>
-          <span class="phase-step__label">Action</span>
-        </div>
-        <span class="phase-sep" aria-hidden="true">›</span>
-        <div class="phase-step">
-          <span class="phase-pip" data-phase="3">4</span>
-          <span class="phase-step__label">Check</span>
-        </div>
-      </div>
-      <p class="phase-msg" id="phase-msg">Waiting...</p>
-    </div>
-
     <!-- Player hand -->
     <section class="player-zone" aria-label="Your hand">
+      <div class="phase-bar" role="status" aria-live="polite">
+        <div class="phase-pips" aria-label="Current phase">
+          <div class="phase-step">
+            <span class="phase-pip" data-phase="0">1</span>
+            <span class="phase-step__label">Action</span>
+          </div>
+          <span class="phase-sep" aria-hidden="true">›</span>
+          <div class="phase-step">
+            <span class="phase-pip" data-phase="1">2</span>
+            <span class="phase-step__label">Swap</span>
+          </div>
+          <span class="phase-sep" aria-hidden="true">›</span>
+          <div class="phase-step">
+            <span class="phase-pip" data-phase="2">3</span>
+            <span class="phase-step__label">Action</span>
+          </div>
+          <span class="phase-sep" aria-hidden="true">›</span>
+          <div class="phase-step">
+            <span class="phase-pip" data-phase="3">4</span>
+            <span class="phase-step__label">Check</span>
+          </div>
+        </div>
+        <p class="phase-msg" id="phase-msg">Waiting...</p>
+      </div>
       <div class="player-zone__header">
         <span class="player-label" id="player-label">You</span>
       </div>

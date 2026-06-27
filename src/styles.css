@@ -25,6 +25,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 20% 0%, rgba(245, 151, 169, 0.2), transparent 34rem),
     linear-gradient(180deg, #fff7ec 0%, #fffaf3 42%, #f7efe2 100%);
@@ -51,7 +52,9 @@ a {
 
 .site-shell {
   min-height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .site-header {
@@ -167,13 +170,20 @@ a {
 }
 
 .icon-button {
-  display: inline-grid;
+  display: inline-flex;
   width: 2.5rem;
   height: 2.5rem;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   color: #fff;
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.28);
+  line-height: 1;
+}
+
+.icon-button svg {
+  display: block;
 }
 
 .mobile-menu {
@@ -694,6 +704,10 @@ h1 {
   background: var(--paper-strong);
   border: 2px solid var(--ink);
   box-shadow: 8px 8px 0 var(--ink);
+}
+
+.action-detail-close {
+  display: none;
 }
 
 .action-detail > img {
@@ -1932,12 +1946,26 @@ h1 {
   .nav-tabs {
     position: absolute;
     top: 100%;
-    left: 1rem;
-    right: 1rem;
+    left: 0;
+    right: auto;
+    width: 100vw;
     display: none;
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    padding: 0.85rem;
+    background: rgba(245, 151, 169, 0.97);
+    border: 0;
+    border-bottom: 2px solid var(--ink);
     box-shadow: 0 22px 30px rgba(32, 33, 38, 0.12);
+  }
+
+  .nav-tabs button {
+    min-width: 0;
+    padding: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.32);
   }
 
   .nav-tabs.is-open {
@@ -1955,6 +1983,7 @@ h1 {
   .hero-product {
     opacity: 0.82;
     width: min(78vw, 36rem);
+    min-width: 0;
   }
 
   .hero-copy {
@@ -1991,14 +2020,34 @@ h1 {
   .hero {
     min-height: auto;
     padding-top: 2rem;
+    overflow: visible;
   }
 
   .hero-product {
     position: relative;
     inset: auto;
-    width: 100%;
+    width: min(100%, 28rem);
+    min-width: 0;
     order: 2;
-    margin-top: -2rem;
+    margin: 3.2rem auto 0;
+  }
+
+  .hero-product > img {
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+
+  .floating-card {
+    width: clamp(3.9rem, 18vw, 5.8rem);
+  }
+
+  .card-three {
+    right: 4%;
+    bottom: -7%;
+  }
+
+  .card-four {
+    left: 8%;
+    top: -8%;
   }
 
   .media-section {
@@ -2011,9 +2060,67 @@ h1 {
 
   .media-grid,
   .set-grid,
-  .score-example-grid,
-  .action-card-grid {
+  .score-example-grid {
     grid-template-columns: 1fr;
+  }
+
+  .action-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+    gap: 0.45rem;
+  }
+
+  .action-card-grid button.selected {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .action-detail {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    display: none;
+    grid-template-rows: auto 1fr;
+    align-content: start;
+    gap: 1rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding: clamp(1rem, 5vw, 1.4rem);
+    background: rgba(255, 249, 241, 0.98);
+    border: 0;
+    box-shadow: none;
+  }
+
+  .action-detail.is-mobile-open {
+    display: grid;
+  }
+
+  .action-detail-close {
+    position: fixed;
+    top: 0.8rem;
+    right: 0.8rem;
+    z-index: 2;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    color: var(--ink);
+    background: var(--yellow);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .action-detail > img {
+    width: min(48vw, 11rem);
+    margin-top: 1.8rem;
+  }
+
+  .action-detail > div {
+    align-self: start;
+  }
+
+  .action-detail h3 {
+    font-size: clamp(2rem, 12vw, 3.6rem);
   }
 
   .manual-block,

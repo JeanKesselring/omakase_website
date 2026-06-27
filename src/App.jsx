@@ -398,6 +398,7 @@ function RulesPage({ t, locale }) {
   const [selectedCard, setSelectedCard] = useState(rules.action_cards[0]);
   const [previewCard, setPreviewCard] = useState(null);
   const [cornerCasesOpen, setCornerCasesOpen] = useState(false);
+  const [mobileActionOpen, setMobileActionOpen] = useState(false);
   const manualSections = t.rules.sections.filter((_, index) => index !== 5);
   const scoringSection = t.rules.sections[5];
   const actionCopy = t.actionCards[selectedCard.name] || {
@@ -459,13 +460,22 @@ function RulesPage({ t, locale }) {
                 onClick={() => {
                   setSelectedCard(card);
                   setCornerCasesOpen(false);
+                  setMobileActionOpen(true);
                 }}
               >
                 <img src={actionCardImages[card.name]} alt={card.name} />
               </button>
             ))}
           </div>
-          <article className="action-detail">
+          <article className={`action-detail ${mobileActionOpen ? 'is-mobile-open' : ''}`}>
+            <button
+              type="button"
+              className="action-detail-close"
+              onClick={() => setMobileActionOpen(false)}
+              aria-label={t.rules.closePreview}
+            >
+              <X size={20} />
+            </button>
             <img src={actionCardImages[selectedCard.name]} alt={selectedCard.name} />
             <div>
               <p className="eyebrow">{t.rules.actionCount(selectedCard.name)}</p>
