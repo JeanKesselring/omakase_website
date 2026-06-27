@@ -639,8 +639,11 @@ body {
   align-self: center;
   display: flex; gap: 8px;
   justify-content: center;
+  justify-content: safe center;
   overflow-x: auto; overflow-y: visible;
-  padding: 8px 4px 8px;
+  padding: 8px 12px 8px;
+  scroll-padding-inline: 12px;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin; scrollbar-color: var(--rule) transparent;
   transform: none;
   min-width: 0;
