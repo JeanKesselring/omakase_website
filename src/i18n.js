@@ -224,8 +224,40 @@ const en = {
   },
   play: {
     eyebrow: 'Against AI',
-    title: 'The digital table is coming soon',
-    body: 'This tab is ready for the AI game repo. For now it keeps the site structure and visual language in place.'
+    title: 'Play Omakase',
+    body: 'Choose a chef, read the belt, and play a full match against the browser AI.',
+    start: 'Start match',
+    restart: 'New match',
+    choose: 'Choose your opponent',
+    easy: 'Easy',
+    advanced: 'Advanced',
+    expert: 'Expert',
+    you: 'You',
+    chef: 'Chef',
+    score: 'Score',
+    deck: 'Deck',
+    trash: 'Trash',
+    hand: 'cards',
+    belt: 'Conveyor belt',
+    passAction: 'Skip action',
+    endTurn: 'End turn',
+    check: 'Call check',
+    selectHand: 'Select one card from your hand.',
+    selectBelt: 'Now select a card on the conveyor belt.',
+    playAction: 'Play one action card, or continue.',
+    thinking: 'Chef is thinking',
+    discard: 'Discard down to your hand limit.',
+    chefsChoice: 'Choose two cards to return to the deck.',
+    chefPositions: 'Choose where those cards return. 0 is the top of the deck.',
+    confirm: 'Return selected cards',
+    confirmPositions: 'Place cards in deck',
+    won: 'You win',
+    lost: 'Chef wins',
+    tied: 'Tie game',
+    activeEffects: 'Active effects',
+    passive: 'Passive',
+    noExchange: 'No legal exchange, continue',
+    phaseLabels: ['Action', 'Exchange', 'Action', 'Check']
   },
   footer: {
     line: 'Created by Jean Kesselring'
@@ -286,7 +318,7 @@ const fr = {
   },
   stores: { ...en.stores, eyebrow: 'Où acheter', title: 'Trouver Omakase près de vous', intro: 'Ajoutez des boutiques dans un fichier JSON. Les liens d’achat en ligne apparaissent quand ils existent.', search: 'Rechercher', searchPlaceholder: 'Ville, pays ou boutique', onlineOnly: 'Boutiques en ligne seulement', buyOnline: 'Acheter en ligne', website: 'Site web', emptyTitle: 'Aucune boutique pour le moment', empty: 'Ajoutez des boutiques dans src/data/shops.json pour les afficher ici et sur la carte.' },
   partners: { eyebrow: 'Revendeurs', title: 'Boutiques partenaires qui proposent Omakase', body: 'Une sélection de librairies, concept stores, boutiques de musée et magasins de jeux où trouver le jeu.' },
-  play: { ...en.play, eyebrow: 'Contre IA', title: 'La table numérique arrive bientôt', body: 'Cet onglet est prêt pour le futur dépôt du jeu contre IA.' },
+  play: { ...en.play, eyebrow: 'Contre IA', title: 'Jouer à Omakase', body: 'Choisissez un chef, observez le tapis et jouez une partie complète contre l’IA du navigateur.', start: 'Commencer', restart: 'Nouvelle partie', choose: 'Choisir l’adversaire', easy: 'Facile', advanced: 'Avancé', expert: 'Expert', you: 'Vous', chef: 'Chef', score: 'Score', deck: 'Deck', trash: 'Défausse', hand: 'cartes', belt: 'Tapis roulant', passAction: 'Passer l’action', endTurn: 'Fin du tour', check: 'Appeler l’addition', selectHand: 'Choisissez une carte de votre main.', selectBelt: 'Choisissez maintenant une carte du tapis.', playAction: 'Jouez une carte action, ou continuez.', thinking: 'Le chef réfléchit', discard: 'Défaussez jusqu’à votre limite de main.', chefsChoice: 'Choisissez deux cartes à remettre dans le deck.', chefPositions: 'Choisissez où remettre ces cartes. 0 correspond au dessus du deck.', confirm: 'Remettre les cartes', confirmPositions: 'Placer les cartes dans le deck', won: 'Vous gagnez', lost: 'Le chef gagne', tied: 'Égalité', activeEffects: 'Effets actifs', passive: 'Passif', noExchange: 'Aucun échange possible, continuer', phaseLabels: ['Action', 'Échange', 'Action', 'Addition'] },
   footer: { line: 'Créé par Jean Kesselring' }
 };
 
@@ -344,7 +376,7 @@ const de = {
   },
   stores: { ...en.stores, eyebrow: 'Kaufen', title: 'Omakase in deiner Nähe finden', intro: 'Läden werden über eine JSON-Datei ergänzt. Online-Links erscheinen, wenn vorhanden.', search: 'Läden suchen', searchPlaceholder: 'Stadt, Land oder Laden', onlineOnly: 'Nur Online-Shops', buyOnline: 'Online kaufen', website: 'Webseite', emptyTitle: 'Noch keine Läden eingetragen', empty: 'Ergänze Läden in src/data/shops.json, dann erscheinen sie hier und auf der Karte.' },
   partners: { eyebrow: 'Handelspartner', title: 'Ausgewählte Shops mit Omakase', body: 'Eine wachsende Liste aus Buchhandlungen, Concept Stores, Museumsshops und Spieleläden, in denen du das Spiel findest.' },
-  play: { ...en.play, eyebrow: 'Gegen KI', title: 'Der digitale Tisch kommt bald', body: 'Dieser Tab ist bereit für das spätere KI-Spiel-Repository.' },
+  play: { ...en.play, eyebrow: 'Gegen KI', title: 'Omakase spielen', body: 'Wähle einen Chef, lies das Band und spiele eine komplette Partie gegen die Browser-KI.', start: 'Partie starten', restart: 'Neue Partie', choose: 'Gegner wählen', easy: 'Einfach', advanced: 'Fortgeschritten', expert: 'Experte', you: 'Du', chef: 'Chef', score: 'Punkte', deck: 'Deck', trash: 'Ablage', hand: 'Karten', belt: 'Förderband', passAction: 'Aktion überspringen', endTurn: 'Zug beenden', check: 'Check rufen', selectHand: 'Wähle eine Karte aus deiner Hand.', selectBelt: 'Wähle jetzt eine Karte auf dem Band.', playAction: 'Spiele eine Aktionskarte oder fahre fort.', thinking: 'Der Chef denkt nach', discard: 'Wirf bis zu deinem Handlimit ab.', chefsChoice: 'Wähle zwei Karten, die ins Deck zurückgehen.', chefPositions: 'Wähle, wohin diese Karten zurückgehen. 0 ist oben auf dem Deck.', confirm: 'Karten zurücklegen', confirmPositions: 'Karten ins Deck legen', won: 'Du gewinnst', lost: 'Der Chef gewinnt', tied: 'Unentschieden', activeEffects: 'Aktive Effekte', passive: 'Passiv', noExchange: 'Kein legaler Tausch, weiter', phaseLabels: ['Aktion', 'Tausch', 'Aktion', 'Check'] },
   footer: { line: 'Erstellt von Jean Kesselring' }
 };
 
@@ -402,7 +434,7 @@ const ja = {
   },
   stores: { ...en.stores, eyebrow: '購入場所', title: 'Omakaseを買える店舗', intro: '店舗はJSONファイルに追加できます。オンライン購入リンクがある場合は表示されます。', search: '店舗検索', searchPlaceholder: '都市、国、店舗名', onlineOnly: 'オンライン販売のみ', buyOnline: 'オンラインで買う', website: 'ウェブサイト', emptyTitle: '店舗はまだありません', empty: 'src/data/shops.json に店舗を追加すると、ここ と地図に表示されます。' },
   partners: { eyebrow: '取扱店', title: 'Omakaseを扱う信頼できるショップ', body: '書店、コンセプトストア、ミュージアムショップ、ゲーム店など、取扱店の一覧です。' },
-  play: { ...en.play, eyebrow: 'AI対戦', title: 'デジタル卓は準備中です', body: 'このタブは、今後のAIゲームリポジトリ統合のために用意されています。' },
+  play: { ...en.play, eyebrow: 'AI対戦', title: 'Omakaseをプレイ', body: 'シェフを選び、ベルトを読み、ブラウザAIと1ゲーム遊べます。', start: 'ゲーム開始', restart: '新しいゲーム', choose: '相手を選ぶ', easy: '初級', advanced: '中級', expert: '上級', you: 'あなた', chef: 'シェフ', score: '得点', deck: '山札', trash: '捨て札', hand: '枚', belt: 'コンベアベルト', passAction: 'アクションを飛ばす', endTurn: 'ターン終了', check: 'チェック', selectHand: '手札から1枚選んでください。', selectBelt: '次にベルト上のカードを選んでください。', playAction: 'アクションカードを使うか、続行します。', thinking: 'シェフが考えています', discard: '手札上限まで捨ててください。', chefsChoice: '山札に戻すカードを2枚選んでください。', chefPositions: '戻す位置を選びます。0は山札の一番上です。', confirm: '選んだカードを戻す', confirmPositions: '山札に戻す', won: 'あなたの勝ち', lost: 'シェフの勝ち', tied: '同点', activeEffects: '発動中の効果', passive: 'パッシブ', noExchange: '交換できません。続行', phaseLabels: ['行動', '交換', '行動', 'チェック'] },
   footer: { line: 'Jean Kesselring 制作' }
 };
 

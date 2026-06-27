@@ -63,6 +63,7 @@ import rulebookPdf from '../Rules.pdf';
 import shops from './data/shops.json';
 import { dictionaries, localeLabels } from './i18n.js';
 import { StoreMap } from './StoreMap.jsx';
+import { OmakasePlay } from './game/OmakasePlay.jsx';
 
 const pages = ['home', 'rules', 'stores', 'play'];
 const tutorialUrl = 'https://www.youtube.com/watch?v=lOHlmx0hAdM';
@@ -139,12 +140,11 @@ const scoringCardLayouts = [
       { kind: 'sushi', name: 'Salmon' },
       { kind: 'action', name: 'Shoyu' },
       { kind: 'sushi', name: 'Karaage', doubled: true },
-      { kind: 'sushi', name: 'Karaage' },
       { kind: 'action', name: 'Ginger' }
     ],
     math: [
       { label: 'Omakase Set', amount: 6000 },
-      { label: 'Karaage x2, one doubled by Shoyu', amount: 1000 },
+      { label: 'Karaage doubled by Shoyu', amount: 1000 },
       { label: 'Ginger', amount: 0 }
     ]
   },
@@ -152,9 +152,7 @@ const scoringCardLayouts = [
     total: 5500,
     cards: [
       { kind: 'sushi', name: 'Assorted Sashimi', doubled: true },
-      { kind: 'sushi', name: 'Assorted Sashimi' },
       { kind: 'sushi', name: 'Conger Eel', doubled: true },
-      { kind: 'sushi', name: 'Conger Eel' },
       { kind: 'sushi', name: 'Salmon' },
       { kind: 'sushi', name: 'Shrimp' },
       { kind: 'sushi', name: 'Tuna Roll' },
@@ -162,8 +160,8 @@ const scoringCardLayouts = [
       { kind: 'action', name: 'Shoyu' }
     ],
     math: [
-      { label: 'Assorted Sashimi x2, one doubled', amount: 3000 },
-      { label: 'Conger Eel x2, one doubled', amount: 1400 },
+      { label: 'Assorted Sashimi doubled by Shoyu', amount: 3000 },
+      { label: 'Conger Eel doubled by Shoyu', amount: 1400 },
       { label: 'Salmon', amount: 400 },
       { label: 'Shrimp', amount: 400 },
       { label: 'Tuna Roll', amount: 300 }
@@ -811,20 +809,7 @@ function RetailerLogo({ shop }) {
 }
 
 function PlayPage({ t }) {
-  return (
-    <section className="play-page">
-      <div className="play-panel">
-        <p className="eyebrow">{t.play.eyebrow}</p>
-        <h1>{t.play.title}</h1>
-        <p>{t.play.body}</p>
-        <div className="mock-game">
-          {[sakeCard, wasabiCard, matchaCard, shoyuCard].map((src, index) => (
-            <img key={src} src={src} alt="" style={{ '--tilt': `${(index - 1.5) * 4}deg` }} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
+  return <OmakasePlay t={t} />;
 }
 
 function Footer({ t, go }) {
