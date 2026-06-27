@@ -90,11 +90,7 @@ export class OmakaseEnv {
       const actions = [];
       for (let hIdx = 0; hIdx < player.hand.length; hIdx++) {
         const hCard = player.hand[hIdx];
-        if (
-          !hCard.isSushi &&
-          hCard.actionCard === ActionCard.GINGER &&
-          hCard.cardId !== state.allowGingerExchangeCardId
-        ) continue;
+        if (!hCard.isSushi && hCard.actionCard === ActionCard.GINGER) continue;
         for (let bIdx = 0; bIdx < state.conveyorBelt.length; bIdx++) {
           const bCard = state.conveyorBelt[bIdx];
           if (hCard.cardId === bCard.cardId) continue;
@@ -130,11 +126,7 @@ export class OmakaseEnv {
     }
 
     if (state.phase === Phase.PHASE_DISCARD) {
-      const nonGinger = player.hand
-        .map((card, i) => ({ card, i }))
-        .filter(({ card }) => card.isSushi || card.actionCard !== ActionCard.GINGER)
-        .map(({ i }) => i);
-      return nonGinger.length > 0 ? nonGinger : player.hand.map((_, i) => i);
+      return player.hand.map((_, i) => i);
     }
 
     return [0];
@@ -189,16 +181,12 @@ export class OmakaseEnv {
     const bIdx = action % MAX_BELT_SIZE;
 
     if (this._exchangeCard(state.currentPlayer, hIdx, bIdx)) {
-      state.allowGingerExchangeCardId = null;
-      if (hasValidSet(state.players[state.currentPlayer].hand)) state.canCallCheckThisTurn = true;
       state.phase = Phase.PHASE_3;
     } else {
       const player = state.players[state.currentPlayer];
       outer: for (let hi = 0; hi < player.hand.length; hi++) {
         for (let bi = 0; bi < state.conveyorBelt.length; bi++) {
           if (this._exchangeCard(state.currentPlayer, hi, bi)) {
-            state.allowGingerExchangeCardId = null;
-            if (hasValidSet(state.players[state.currentPlayer].hand)) state.canCallCheckThisTurn = true;
             state.phase = Phase.PHASE_3;
             break outer;
           }
@@ -337,9 +325,6 @@ export class OmakaseEnv {
       return;
     }
 
-    state.canCallCheckThisTurn = false;
-    state.allowGingerExchangeCardId = null;
-    const hadNoCards = player.hand.length === 0;
     const card = this._drawFromDeck();
     if (!card) return;
 
@@ -348,10 +333,6 @@ export class OmakaseEnv {
       state.wasabiEvents.push({ type: 'draw', playerIdx: state.currentPlayer });
     }
     player.hand.push(card);
-    if (!card.isSushi && card.actionCard === ActionCard.GINGER && hadNoCards) {
-      state.allowGingerExchangeCardId = card.cardId;
-    }
-    if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
@@ -359,14 +340,8 @@ export class OmakaseEnv {
   _drawFromDeck() {
     const { state } = this;
     if (state.deck.length === 0) {
-      if (state.reshufflesRemaining > 0 && state.trash.length > 0) {
-        state.deck = state.trash.splice(0);
-        shuffleArray(state.deck, this._rng);
-        state.reshufflesRemaining--;
-      } else {
-        state.gameOver = true;
-        return null;
-      }
+      state.gameOver = true;
+      return null;
     }
     return state.deck.shift();
   }
@@ -385,7 +360,7 @@ export class OmakaseEnv {
   _canCallCheck(playerIdx) {
     const player = this.state.players[playerIdx];
     if (player.hasCalledCheck) return false;
-    return this.state.canCallCheckThisTurn && hasValidSet(player.hand);
+    return hasValidSet(player.hand);
   }
 
   _exchangeCard(playerIdx, hIdx, bIdx) {
@@ -397,11 +372,7 @@ export class OmakaseEnv {
     const hCard = player.hand[hIdx];
     const bCard = state.conveyorBelt[bIdx];
 
-    if (
-      !hCard.isSushi &&
-      hCard.actionCard === ActionCard.GINGER &&
-      hCard.cardId !== state.allowGingerExchangeCardId
-    ) return false;
+    if (!hCard.isSushi && hCard.actionCard === ActionCard.GINGER) return false;
     if (hCard.cardId === bCard.cardId) return false;
     if (hCard.isSushi && bCard.isSushi && hCard.sushiCard === bCard.sushiCard) return false;
     if (!hCard.isSushi && !bCard.isSushi && hCard.actionCard === bCard.actionCard) return false;
@@ -427,13 +398,8 @@ export class OmakaseEnv {
     state.trash.push(card);
 
     const opponents = Array.from({ length: state.numPlayers }, (_, i) => i).filter(i => i !== playerIdx);
-    const targetableOpponents = opponents.filter(i => {
-      const opponent = state.players[i];
-      return !opponent.checkProtected && opponent.hand.length > 0;
-    });
 
     if (actionCardType === ActionCard.MATCHA) {
-      state.trash.pop();
       player.matchaCount++;
       player.maxHandSize++;
       const drawn = this._drawFromDeck();
@@ -444,13 +410,12 @@ export class OmakaseEnv {
           state.wasabiEvents.push({ type: 'draw', playerIdx });
         }
       }
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 
     if (actionCardType === ActionCard.CHOPSTICKS) {
-      if (targetableOpponents.length > 0) {
-        const victim = choices.victimIdx ?? randomChoice(targetableOpponents, this._rng);
+      if (opponents.length > 0) {
+        const victim = randomChoice(opponents, this._rng);
         const vp = state.players[victim];
         if (!vp.checkProtected && vp.hand.length > 0) {
           let stolen;
@@ -467,13 +432,12 @@ export class OmakaseEnv {
           }
         }
       }
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 
     if (actionCardType === ActionCard.SAKE) {
-      if (targetableOpponents.length > 0) {
-        const victim = choices.victimIdx ?? randomChoice(targetableOpponents, this._rng);
+      if (opponents.length > 0) {
+        const victim = randomChoice(opponents, this._rng);
         const vp = state.players[victim];
         if (!vp.checkProtected && vp.hand.length > 0) {
           let stolen;
@@ -499,13 +463,12 @@ export class OmakaseEnv {
           }
         }
       }
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 
     if (actionCardType === ActionCard.UMESHU) {
-      if (targetableOpponents.length > 0) {
-        const victim = choices.victimIdx ?? randomChoice(targetableOpponents, this._rng);
+      if (opponents.length > 0) {
+        const victim = randomChoice(opponents, this._rng);
         const vp = state.players[victim];
         if (vp.checkProtected) return true;
         const combined = [...player.hand, ...vp.hand];
@@ -523,7 +486,6 @@ export class OmakaseEnv {
           }
         }
       }
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 
@@ -538,7 +500,6 @@ export class OmakaseEnv {
         }
       }
       state.chefChoiceDrawnCards = drawn;
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 
@@ -548,22 +509,21 @@ export class OmakaseEnv {
         if (vp.checkProtected) continue;
         if (vp.hand.length > 0) {
           let target;
-          const sushi = vp.hand.filter(c => c.isSushi);
-          if (sushi.length === 0) continue;
-          const maxValue = Math.max(...sushi.map(c => CARD_VALUES[c.sushiCard] ?? 0));
-          const tied = sushi.filter(c => (CARD_VALUES[c.sushiCard] ?? 0) === maxValue);
-          const chosenIdx = choices.forkDiscardByVictim?.[victim];
-          const chosen = chosenIdx != null ? vp.hand[chosenIdx] : null;
-          if (chosen?.isSushi && (CARD_VALUES[chosen.sushiCard] ?? 0) === maxValue) {
-            target = chosen;
+          if (choices.victimCardIdx != null && choices.victimCardIdx < vp.hand.length) {
+            // Player chose a specific card (face-down pick — any card type)
+            target = vp.hand[choices.victimCardIdx];
           } else {
-            target = randomChoice(tied, this._rng);
+            // Auto: take most expensive sushi
+            const sushi = vp.hand.filter(c => c.isSushi);
+            if (sushi.length === 0) continue;
+            target = sushi.reduce((a, b) =>
+              (CARD_VALUES[a.sushiCard] ?? 0) >= (CARD_VALUES[b.sushiCard] ?? 0) ? a : b
+            );
           }
           vp.hand.splice(vp.hand.indexOf(target), 1);
           state.trash.push(target);
         }
       }
-      if (hasValidSet(player.hand)) state.canCallCheckThisTurn = true;
       return true;
     }
 

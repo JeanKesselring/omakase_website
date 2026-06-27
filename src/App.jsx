@@ -63,7 +63,7 @@ import rulebookPdf from '../Rules.pdf';
 import shops from './data/shops.json';
 import { dictionaries, localeLabels } from './i18n.js';
 import { StoreMap } from './StoreMap.jsx';
-import { OmakasePlay } from './game/OmakasePlay.jsx';
+import { OmakaseFramePlay } from './game/OmakaseFramePlay.jsx';
 
 const pages = ['home', 'rules', 'stores', 'play'];
 const tutorialUrl = 'https://www.youtube.com/watch?v=lOHlmx0hAdM';
@@ -809,7 +809,7 @@ function RetailerLogo({ shop }) {
 }
 
 function PlayPage({ t }) {
-  return <OmakasePlay t={t} />;
+  return <OmakaseFramePlay t={t} />;
 }
 
 function Footer({ t, go }) {
