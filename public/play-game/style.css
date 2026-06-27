@@ -1290,12 +1290,15 @@ body {
   .player-hand {
     flex: 1;
     align-items: center;
-    justify-content: center;
-    justify-content: safe center;
-    padding: 0.5rem 0.45rem 0.65rem;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100vw;
+    padding: 0.5rem 0.65rem 0.65rem;
     gap: 6px;
     overflow-x: auto;
     overflow-y: visible;
+    scroll-padding-inline: 0.65rem;
+    -webkit-overflow-scrolling: touch;
   }
   .player-hand .card {
     width: clamp(54px, 17vw, 72px);
@@ -1430,10 +1433,20 @@ body {
   .belt-section .card { width: 100%; height: 100%; aspect-ratio: auto; }
   .belt-labels  { display: none; }
 
-  .player-zone { grid-row: 3; grid-column: 1; padding: 4px 0; border-top: 1px solid var(--rule); overflow: hidden; }
+  .player-zone { grid-row: 3; grid-column: 1; padding: 4px 0; border-top: 1px solid var(--rule); overflow: hidden; min-width: 0; }
   .player-zone__header { display: none; }
   .passive-effects     { display: none; }
-  .player-hand { justify-content: center; justify-content: safe center; padding: 4px 8px 5px; gap: 6px; }
+  .player-hand {
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100vw;
+    padding: 4px 8px 5px;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-padding-inline: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
   .player-hand .card   { width: calc(var(--card-w) * 1.35); height: calc(var(--card-h) * 1.35); }
 
   .controls { grid-row: 3; grid-column: 2; flex-direction: column; height: auto; padding: 4px 8px; gap: 4px; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); justify-content: center; align-items: stretch; }
