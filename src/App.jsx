@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   X
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import rules from '../rules.json';
 import favicon from '../Assets/Web/favicon.png';
 import frontShot from '../Assets/Web/Product_shots/front.jpg';
@@ -628,6 +628,7 @@ function ScoringCardRow({ cards, onPreview }) {
 function StoresPage({ t }) {
   const [query, setQuery] = useState('');
   const [onlineOnly, setOnlineOnly] = useState(false);
+  const [selectedShopId, setSelectedShopId] = useState(null);
   const filteredShops = useMemo(() => {
     const q = query.trim().toLowerCase();
     return shops.filter((shop) => {
@@ -638,15 +639,20 @@ function StoresPage({ t }) {
       return matchesQuery && matchesOnline;
     });
   }, [query, onlineOnly]);
+  const popupLabels = useMemo(() => ({
+    buyOnline: t.stores.buyOnline,
+    website: t.stores.website,
+    online: t.stores.buyOnline
+  }), [t]);
+
+  useEffect(() => {
+    if (selectedShopId && !filteredShops.some((shop) => shop.id === selectedShopId)) {
+      setSelectedShopId(null);
+    }
+  }, [filteredShops, selectedShopId]);
 
   return (
     <>
-      <section className="page-hero compact stores-hero">
-        <p className="eyebrow">{t.stores.eyebrow}</p>
-        <h1>{t.stores.title}</h1>
-        <p>{t.stores.intro}</p>
-      </section>
-      <PartnerRetailers t={t} compact />
       <section className="section store-layout">
         <div className="store-controls">
           <label>
@@ -666,8 +672,17 @@ function StoresPage({ t }) {
             <span>{t.stores.onlineOnly}</span>
           </label>
         </div>
-        <StoreMap shops={filteredShops} emptyLabel={t.stores.empty} />
-        <div className="shop-list">
+        <StoreMap
+          shops={filteredShops}
+          emptyLabel={t.stores.empty}
+          selectedShopId={selectedShopId}
+          onSelectShop={setSelectedShopId}
+          popupLabels={popupLabels}
+        />
+        <aside className="shop-list shop-tile-panel" aria-label={t.partners.title}>
+          <div className="shop-panel-heading">
+            <h2>{t.partners.title}</h2>
+          </div>
           {filteredShops.length === 0 ? (
             <article className="empty-state">
               <MapPin size={28} />
@@ -675,9 +690,17 @@ function StoresPage({ t }) {
               <p>{t.stores.empty}</p>
             </article>
           ) : (
-            filteredShops.map((shop) => <ShopCard key={shop.id} shop={shop} t={t} />)
+            filteredShops.map((shop) => (
+              <ShopTile
+                key={shop.id}
+                shop={shop}
+                t={t}
+                selected={shop.id === selectedShopId}
+                onSelect={() => setSelectedShopId(shop.id)}
+              />
+            ))
           )}
-        </div>
+        </aside>
       </section>
     </>
   );
@@ -687,7 +710,6 @@ function PartnerRetailers({ t, compact = false }) {
   return (
     <section className={`section partner-section ${compact ? 'compact-partners' : ''}`}>
       <div className="section-heading">
-        <p className="eyebrow">{t.partners.eyebrow}</p>
         <h2>{t.partners.title}</h2>
         <p>{t.partners.body}</p>
       </div>
@@ -710,9 +732,46 @@ function PartnerRetailers({ t, compact = false }) {
   );
 }
 
-function ShopCard({ shop, t }) {
+function ShopTile({ shop, t, selected, onSelect }) {
+  const link = shop.productUrl || shop.websiteUrl;
+
   return (
-    <article className="shop-card">
+    <article
+      className={`shop-tile ${selected ? 'is-selected' : ''}`}
+      tabIndex={0}
+      onClick={onSelect}
+      onFocus={onSelect}
+      onMouseEnter={onSelect}
+    >
+      <RetailerLogo shop={shop} />
+      <div>
+        <h2>{shop.name}</h2>
+        <p>{[shop.city, shop.country].filter(Boolean).join(', ')}</p>
+      </div>
+      {link && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(event) => event.stopPropagation()}
+          aria-label={`${shop.productUrl ? t.stores.buyOnline : t.stores.website}: ${shop.name}`}
+        >
+          <ExternalLink size={16} />
+        </a>
+      )}
+    </article>
+  );
+}
+
+function ShopCard({ shop, t, selected, onSelect }) {
+  return (
+    <article
+      className={`shop-card ${selected ? 'is-selected' : ''}`}
+      tabIndex={0}
+      onClick={onSelect}
+      onFocus={onSelect}
+      onMouseEnter={onSelect}
+    >
       <RetailerLogo shop={shop} />
       <div>
         <h2>{shop.name}</h2>

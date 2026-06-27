@@ -5,13 +5,13 @@
     "country": "Switzerland",
     "city": "Basel",
     "address": null,
-    "lat": null,
-    "lng": null,
-    "websiteUrl": null,
+    "lat": 47.5596,
+    "lng": 7.5886,
+    "websiteUrl": "https://homu.ch/",
     "productUrl": null,
     "sellsOnline": false,
     "logoId": "home-japanese-living",
-    "notes": "Basel retailer. Exact address and logo still need confirmation."
+    "notes": "Basel retailer. City-level marker; exact address still needs confirmation."
   },
   {
     "id": "tokoro",
@@ -101,15 +101,15 @@
     "id": "yugenlab",
     "name": "Yugen Lab",
     "country": "Switzerland",
-    "city": null,
-    "address": null,
-    "lat": null,
-    "lng": null,
+    "city": "Geneva",
+    "address": "10 place de Grenus, 1201 Genève",
+    "lat": 46.2056,
+    "lng": 6.1433,
     "websiteUrl": "https://yugenlab.com",
     "productUrl": null,
     "sellsOnline": false,
     "logoId": "yugenlab",
-    "notes": "Online Japanese tableware and design shop. Exact Omakase product URL still needs confirmation."
+    "notes": "Japanese tableware and design shop. Exact Omakase product URL still needs confirmation."
   },
   {
     "id": "chuo",
