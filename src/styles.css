@@ -228,6 +228,12 @@ a {
   position: absolute;
   width: clamp(5rem, 12vw, 9rem);
   animation: floaty 5.2s ease-in-out infinite;
+  /* Shadow stays constant: animating drop-shadow forces a repaint every frame
+     and looks choppy on many devices. Only `translate` animates (composited). */
+  filter:
+    drop-shadow(5px 7px 0 var(--ink))
+    drop-shadow(0 16px 14px rgba(32, 33, 38, 0.18));
+  will-change: translate;
 }
 
 .floating-card img,
@@ -273,18 +279,8 @@ a {
 }
 
 @keyframes floaty {
-  0%, 100% {
-    translate: 0 0;
-    filter:
-      drop-shadow(4px 4px 0 var(--ink))
-      drop-shadow(0 10px 12px rgba(32, 33, 38, 0.18));
-  }
-  50% {
-    translate: 0 -21px;
-    filter:
-      drop-shadow(10px 18px 0 var(--ink))
-      drop-shadow(0 28px 20px rgba(32, 33, 38, 0.2));
-  }
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -21px; }
 }
 
 .eyebrow {
@@ -1640,8 +1636,19 @@ h1 {
 }
 
 .opponent-hand {
-  justify-content: center;
   min-height: 5.4rem;
+}
+
+/* Center rows of cards when they fit, but keep every card reachable when they
+   overflow — `justify-content: center` on a scroller clips the left edge */
+.opponent-hand > :first-child,
+.belt-cards > :first-child {
+  margin-left: auto;
+}
+
+.opponent-hand > :last-child,
+.belt-cards > :last-child {
+  margin-right: auto;
 }
 
 .belt-row {
@@ -1652,7 +1659,6 @@ h1 {
 }
 
 .belt-cards {
-  justify-content: center;
   padding: 1rem;
   background:
     linear-gradient(90deg, rgba(32, 33, 38, 0.12), rgba(32, 33, 38, 0.05), rgba(32, 33, 38, 0.12)),
@@ -1947,8 +1953,8 @@ h1 {
     position: absolute;
     top: 100%;
     left: 0;
-    right: auto;
-    width: 100vw;
+    right: 0;
+    width: auto;
     display: none;
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, 1fr);
@@ -2014,7 +2020,7 @@ h1 {
   }
 
   h1 {
-    font-size: clamp(4rem, 22vw, 6rem);
+    font-size: clamp(3.4rem, 18vw, 6rem);
   }
 
   .hero {
@@ -2259,6 +2265,98 @@ h1 {
     flex-direction: column;
     gap: 0.15rem;
   }
+}
+
+/* ── Micro-interactions ─────────────────────────────────────────────────── */
+
+/* Buttons press into their offset shadow, like laying a card on the table */
+.button:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.button.small:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Brand mark tips its head when you hover the logo */
+.brand-mark img {
+  transition: transform 200ms ease;
+}
+
+.brand:hover .brand-mark img,
+.brand:focus-visible .brand-mark img {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.nav-tabs button {
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.nav-tabs button:not(.active):hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.icon-button:active,
+.locale-picker button:active {
+  transform: translateY(1px);
+}
+
+/* Product tiles lift like the buttons do */
+.media-tile,
+.rules-gif-step {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.media-tile:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 9px 9px 0 var(--ink);
+}
+
+.rules-gif-step:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 var(--ink);
+}
+
+.media-tile-frame img {
+  transition: transform 400ms ease;
+}
+
+.media-tile:hover .media-tile-frame img {
+  transform: scale(1.04) rotate(0.5deg);
+}
+
+.flow-controls button {
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.flow-controls button:not(.active):hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+/* Scoring example cards wiggle up for a closer look */
+.score-mini-card img {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.score-mini-card:hover img,
+.score-mini-card:focus-visible img {
+  transform: translateY(-5px) rotate(-2deg);
+  box-shadow: 4px 6px 0 var(--ink);
+}
+
+/* Action card grid: cards straighten and rise on hover */
+.action-card-grid button:not(.selected):hover {
+  transform: translateY(-4px) rotate(-1deg);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

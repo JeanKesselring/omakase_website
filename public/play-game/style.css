@@ -105,7 +105,7 @@ body {
 .btn--danger:hover:not(:disabled) { background: var(--salmon); color: var(--ink); }
 .btn--danger.btn--check-avail { animation: check-pulse 2s ease-in-out infinite; }
 
-.btn--ghost { background: transparent; color: var(--muted); border: 1px solid transparent; }
+.btn--ghost { background: transparent; color: var(--muted); border: 1px solid transparent; box-shadow: none; }
 .btn--ghost:hover:not(:disabled) { color: var(--body); background: var(--peri-wash); }
 
 .btn--lg { padding: 14px 28px; font-size: 15px; }
@@ -400,9 +400,9 @@ body {
 .opp-zone__info { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .opp-hand { display: flex; gap: 5px; align-items: center; justify-content: center; overflow: hidden; flex: 1; }
 
-/* Small face-down card backs for opponent hand */
+/* Face-down card backs for opponent hand — same size as belt cards */
 .card-back {
-  width: 52px; height: 73px;
+  width: var(--card-w); height: var(--card-h);
   border-radius: 4px; flex-shrink: 0;
   overflow: hidden;
   border: 2px solid var(--ink);
@@ -434,7 +434,7 @@ body {
   grid-row: 2;
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(var(--pile-w), 1fr) minmax(0, 840px) minmax(var(--pile-w), 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 840px) minmax(0, 1fr);
   align-items: center;
   gap: 0;
   background: var(--paper);
@@ -442,9 +442,10 @@ body {
   overflow: visible;
 }
 
-/* Deck / Trash pile zones */
+/* Deck / Trash pile zones — removed from the table view (kept in DOM for JS) */
 .pile-zone {
-  display: flex; flex-direction: column; align-items: center;
+  display: none;
+  flex-direction: column; align-items: center;
   justify-self: center;
   gap: 5px; flex-shrink: 0;
   margin-inline: 0;
@@ -525,11 +526,16 @@ body {
   display: none;
 }
 .belt-slots {
-  display: flex; gap: 8px; justify-content: center;
+  display: flex; gap: 8px; justify-content: flex-start;
   padding: 8px 4px;
   overflow-x: auto; overflow-y: visible; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .belt-slots::-webkit-scrollbar { display: none; }
+/* Center when content fits, but stay fully scrollable when it overflows —
+   `justify-content: center` on a scroller makes the left edge unreachable */
+.belt-slots > :first-child { margin-left: auto; }
+.belt-slots > :last-child  { margin-right: auto; }
 .belt-slot { width: var(--card-w); height: var(--card-h); flex-shrink: 0; position: relative; }
 .belt-slot:last-child::after {
   content: '→';
@@ -638,15 +644,48 @@ body {
   grid-row: 1 / 4;
   align-self: center;
   display: flex; gap: 8px;
-  justify-content: center;
-  justify-content: safe center;
+  justify-content: flex-start;
   overflow-x: auto; overflow-y: visible;
-  padding: 8px 12px 8px;
+  padding: 20px 12px 12px;
   scroll-padding-inline: 12px;
+  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin; scrollbar-color: var(--rule) transparent;
-  transform: none;
+  transform: translateY(-8px);
   min-width: 0;
+  /* Hand sits above belt cards (z 60) and highlights (z 170), below modals (z 100
+     stacks against this container's own level) — highest of the table layers */
+  z-index: 90;
+}
+/* Same fits-centered / overflow-scrollable trick as the belt */
+.player-hand > :first-child { margin-left: auto; }
+.player-hand > :last-child  { margin-right: auto; }
+.player-hand .card {
+  scroll-snap-align: center;
+  width: calc(var(--card-w) * 1.5);
+  height: calc(var(--card-h) * 1.5);
+}
+
+/* ── Hand zoom — first click on a hand card pops a 2× preview ──────────────
+   The hand is a scroll container, so an in-place scale() would be clipped;
+   game.js positions this fixed, click-transparent layer over the card. */
+.hand-zoom {
+  position: fixed;
+  z-index: 95;
+  pointer-events: none;
+  transform-origin: center bottom;
+  animation: hand-zoom-pop 180ms cubic-bezier(.2, .9, .3, 1.3) both;
+}
+.hand-zoom img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  border: 2px solid var(--ink);
+  border-radius: var(--card-r);
+  background: var(--cream);
+}
+@keyframes hand-zoom-pop {
+  from { transform: scale(.5); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
 }
 
 /* Controls */
@@ -1157,6 +1196,35 @@ body {
   50%       { box-shadow: var(--shadow-card-lift), 0 0 0 8px rgba(228,82,90,.08); }
 }
 
+/* ══ Micro-interactions ══════════════════════════════════════════════════ */
+/* Buttons lift on hover (pointer devices), press into their shadow on tap */
+@media (hover: hover) {
+  .btn:hover:not(:disabled):not(:active) {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+}
+
+/* Tactile press on playable cards — quick dip before the play registers */
+.card--playable:not(.card--selected):not(.card--pending):active {
+  transform: translateY(-1px) scale(.97);
+  transition-duration: 60ms;
+}
+
+/* Deck gives a little tilt when you reach for it */
+.pile-stack { transition: transform var(--t-hover), box-shadow var(--t-hover); }
+@media (hover: hover) {
+  .pile-zone--deck .pile-stack:hover { transform: rotate(-2deg) translateY(-2px); }
+  .pile-stack--trash:hover { transform: rotate(2deg) translateY(-2px); }
+}
+
+/* Opponent card backs fan in with a tiny stagger when dealt */
+.card-back { transition: transform 200ms ease; }
+@media (hover: hover) {
+  .opp-hand:hover .card-back:nth-child(odd)  { transform: translateY(2px) rotate(-1.5deg); }
+  .opp-hand:hover .card-back:nth-child(even) { transform: translateY(-2px) rotate(1.5deg); }
+}
+
 /* ══ Reduced motion ══════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -1173,7 +1241,7 @@ body {
   }
 
   #screen-game {
-    grid-template-rows: 76px minmax(0, 1fr) minmax(8.5rem, auto) auto;
+    grid-template-rows: auto minmax(0, 1fr) minmax(8.5rem, auto) auto;
     grid-template-columns: 1fr;
   }
 
@@ -1210,7 +1278,11 @@ body {
     min-height: 0;
   }
   .opp-zone__info { display: none; }
-  #opp-hand .card-back { width: 36px; height: 50px; }
+  #opp-hand .card-back {
+    width: clamp(43px, 14vw, 54px);
+    height: auto;
+    aspect-ratio: 5 / 7;
+  }
 
   /* Phase bar: removed */
   .phase-bar { display: none; }
@@ -1251,11 +1323,9 @@ body {
   .belt-slots {
     flex: 0 0 auto;
     align-items: center;
-    justify-content: center;
-    justify-content: safe center;
     padding: 0.25rem;
     gap: 4px;
-    overflow-x: visible;
+    overflow-x: auto;
   }
   .belt-slot {
     width: clamp(43px, 14vw, 54px);
@@ -1290,18 +1360,18 @@ body {
   .player-hand {
     flex: 1;
     align-items: center;
-    justify-content: flex-start;
     width: 100%;
     max-width: 100vw;
-    padding: 0.5rem 0.65rem 0.65rem;
+    padding: 1.1rem 0.65rem 0.65rem;
     gap: 6px;
     overflow-x: auto;
     overflow-y: visible;
     scroll-padding-inline: 0.65rem;
     -webkit-overflow-scrolling: touch;
+    transform: translateY(-6px);
   }
   .player-hand .card {
-    width: clamp(54px, 17vw, 72px);
+    width: clamp(81px, 25.5vw, 108px);
     height: auto;
     aspect-ratio: 5 / 7;
     flex: 0 0 auto;
@@ -1402,7 +1472,7 @@ body {
   }
 
   #screen-game {
-    grid-template-rows: 36px 1fr auto;
+    grid-template-rows: auto 1fr auto;
     grid-template-columns: 1fr auto;
   }
 
@@ -1420,7 +1490,7 @@ body {
 
   .opp-zone { grid-row: 1; grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 3px 0; background: var(--belt-bg); min-height: 0; border-bottom: 1px solid rgba(200,169,110,.08); }
   .opp-zone__info { display: none; }
-  #opp-hand .card-back { width: 24px; height: 34px; }
+  #opp-hand .card-back { width: var(--card-w); height: var(--card-h); }
 
   .phase-bar { display: none; }
 
@@ -1428,7 +1498,7 @@ body {
   .belt-center  { flex: 1; min-width: 0; overflow: hidden; }
   .belt-track   { padding: 5px 8px; }
   .belt-rail    { margin: 0; }
-  .belt-slots   { align-items: center; justify-content: center; justify-content: safe center; gap: 5px; overflow-x: auto; }
+  .belt-slots   { align-items: center; gap: 5px; overflow-x: auto; }
   .belt-slot    { width: var(--card-w); height: var(--card-h); }
   .belt-section .card { width: 100%; height: 100%; aspect-ratio: auto; }
   .belt-labels  { display: none; }
@@ -1437,17 +1507,17 @@ body {
   .player-zone__header { display: none; }
   .passive-effects     { display: none; }
   .player-hand {
-    justify-content: flex-start;
     width: 100%;
     max-width: 100vw;
-    padding: 4px 8px 5px;
+    padding: 14px 8px 6px;
     gap: 6px;
     overflow-x: auto;
     overflow-y: visible;
     scroll-padding-inline: 8px;
     -webkit-overflow-scrolling: touch;
+    transform: translateY(-3px);
   }
-  .player-hand .card   { width: calc(var(--card-w) * 1.35); height: calc(var(--card-h) * 1.35); }
+  .player-hand .card   { width: calc(var(--card-w) * 2); height: calc(var(--card-h) * 2); }
 
   .controls { grid-row: 3; grid-column: 2; flex-direction: column; height: auto; padding: 4px 8px; gap: 4px; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); justify-content: center; align-items: stretch; }
   .controls .score-box { flex-direction: column; align-items: center; gap: 0; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }

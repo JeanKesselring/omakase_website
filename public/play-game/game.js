@@ -64,6 +64,8 @@ const $ = id => document.getElementById(id);
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('screen--active'));
   $(id).classList.add('screen--active');
+  beltPreviewIdx = null;
+  hideHandZoom();
 }
 
 // ── Card rendering ────────────────────────────────────────────────────────────
@@ -215,6 +217,9 @@ function renderTrashPile(state) {
 function renderBelt(state, isPlayerTurn, phase) {
   const beltEl = $('belt-slots');
   beltEl.innerHTML = '';
+  if (beltPreviewIdx != null && beltPreviewIdx >= state.conveyorBelt.length) {
+    beltPreviewIdx = null;
+  }
 
   const showTargets = isPlayerTurn && (
     (phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT') ||
@@ -240,12 +245,27 @@ function renderBelt(state, isPlayerTurn, phase) {
     }
 
     if (isTarget) {
+      // First click pops the 1.5× preview, second click confirms the swap
       cardEl.style.cursor = 'pointer';
-      if (swapIntent) {
-        cardEl.addEventListener('click', e => { e.stopPropagation(); onBeltCardClickWithSwapIntent(bIdx); });
-      } else {
-        cardEl.addEventListener('click', () => onBeltCardClick(bIdx));
-      }
+      cardEl.addEventListener('click', e => {
+        e.stopPropagation();
+        if (beltPreviewIdx === bIdx) {
+          beltPreviewIdx = null;
+          if (swapIntent) onBeltCardClickWithSwapIntent(bIdx);
+          else onBeltCardClick(bIdx);
+        } else {
+          beltPreviewIdx = bIdx;
+          render();
+        }
+      });
+    } else {
+      // Idle belt card: tap to peek at it, tap again to dismiss
+      cardEl.style.cursor = 'zoom-in';
+      cardEl.addEventListener('click', e => {
+        e.stopPropagation();
+        beltPreviewIdx = beltPreviewIdx === bIdx ? null : bIdx;
+        render();
+      });
     }
 
     const slot = document.createElement('div');
@@ -278,8 +298,102 @@ function renderPassiveEffects(player) {
     add(`Matcha ×${player.matchaCount}`, 'effect-badge--nori');
 }
 
+let lastHandSelIdx = -1;
+
+// ── Card zoom: first click on a hand or belt card shows a 1.5× fixed-position
+// preview. pointer-events: none in CSS keeps every underlying interaction
+// working (the second click passes through the zoom to the card below).
+const HAND_ZOOM_SCALE = 1.5;
+let handZoomEl = null;
+let beltPreviewIdx = null; // belt card currently popped up | null
+
+function positionHandZoom(cardEl) {
+  if (!handZoomEl) return;
+  const r = cardEl.getBoundingClientRect();
+  const w = r.width * HAND_ZOOM_SCALE;
+  const h = r.height * HAND_ZOOM_SCALE;
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+  // Grow upward from the card's bottom edge, clamped to the viewport
+  const top = Math.max(8, r.bottom - h);
+  handZoomEl.style.width = w + 'px';
+  handZoomEl.style.height = h + 'px';
+  handZoomEl.style.left = left + 'px';
+  handZoomEl.style.top = top + 'px';
+}
+
+function showHandZoom(cardEl) {
+  const img = cardEl.querySelector('.card__img');
+  if (!img) { hideHandZoom(); return; }
+  if (!handZoomEl) {
+    handZoomEl = document.createElement('div');
+    handZoomEl.className = 'hand-zoom';
+    handZoomEl.appendChild(document.createElement('img'));
+    document.body.appendChild(handZoomEl);
+  }
+  const zoomImg = handZoomEl.querySelector('img');
+  if (zoomImg.src !== img.src) zoomImg.src = img.src;
+  positionHandZoom(cardEl);
+}
+
+function hideHandZoom() {
+  if (handZoomEl) { handZoomEl.remove(); handZoomEl = null; }
+}
+
+// Belt preview wins over hand selection (it is the most recent click)
+function currentZoomTarget(handSelEl) {
+  if (beltPreviewIdx != null) {
+    const beltCard = document.querySelectorAll('#belt-slots .card')[beltPreviewIdx];
+    if (beltCard) return beltCard;
+  }
+  return handSelEl ?? document.querySelector('#player-hand .card--selected');
+}
+
+function updateCardZoom(handSelEl) {
+  const target = currentZoomTarget(handSelEl);
+  if (target) showHandZoom(target); else hideHandZoom();
+}
+
+function repositionHandZoom() {
+  if (!handZoomEl) return;
+  const target = currentZoomTarget();
+  if (target) positionHandZoom(target);
+}
+$('player-hand').addEventListener('scroll', repositionHandZoom);
+$('belt-slots').addEventListener('scroll', repositionHandZoom);
+window.addEventListener('resize', repositionHandZoom);
+
+// Clicking anywhere outside the hand, belt, or controls deselects the
+// popped-up card (swapIntent has its own click-away handler already).
+// Capture phase: card handlers re-render the hand, which detaches the
+// clicked element and would break the closest() containment check.
+document.addEventListener('click', e => {
+  if (!env || env.state.gameOver) return;
+  if (e.target.closest('#player-hand')) {
+    // Hand clicks close any belt preview; the hand handlers re-render
+    beltPreviewIdx = null;
+    return;
+  }
+  if (e.target.closest('#belt-slots, .controls, .modal-bg, .action-choice-overlay, .drawer, .drawer-bg, .topbar')) return;
+  let changed = false;
+  if (env.state.phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT') {
+    p2 = { step: 'SELECT_HAND', handIdx: null, legalBeltIdxs: new Set() };
+    changed = true;
+  }
+  if (phase3Selection) {
+    phase3Selection = null;
+    changed = true;
+  }
+  if (beltPreviewIdx != null) {
+    beltPreviewIdx = null;
+    changed = true;
+  }
+  if (changed) render();
+}, true);
+
 function renderPlayerHand(player, state, isPlayerTurn, phase) {
   const handEl = $('player-hand');
+  const prevScroll = handEl.scrollLeft;
   handEl.innerHTML = '';
 
   const legalActions = isPlayerTurn ? env.getLegalActions() : [];
@@ -293,8 +407,10 @@ function renderPlayerHand(player, state, isPlayerTurn, phase) {
         selected  = p2.handIdx === hIdx;
         disabled  = !legalActions.some(a => Math.floor(a / MAX_BELT_SIZE) === hIdx);
       } else {
+        // SELECT_BELT: other swappable cards stay enabled so a click switches
+        // the selection instead of trapping the player in this state
         selected  = p2.handIdx === hIdx;
-        disabled  = !selected;
+        disabled  = !selected && !legalActions.some(a => Math.floor(a / MAX_BELT_SIZE) === hIdx);
       }
     } else if (isPlayerTurn && (phase === Phase.PHASE_1 || phase === Phase.PHASE_3)) {
       if (!card.isSushi && !PASSIVE_ACTION_CARDS.has(card.actionCard)) {
@@ -331,6 +447,13 @@ function renderPlayerHand(player, state, isPlayerTurn, phase) {
       } else if (phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT' && selected) {
         el.style.cursor = 'pointer';
         el.addEventListener('click', onHandCardDeselect);
+      } else if (phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT' && !disabled) {
+        // Switch the popped-up card to this one
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => {
+          p2 = { step: 'SELECT_HAND', handIdx: null, legalBeltIdxs: new Set() };
+          onHandCardClick(hIdx);
+        });
       } else if (phase === Phase.PHASE_3 && isPlayable) {
         el.style.cursor = 'pointer';
         if (phase3Selection?.card === card) {
@@ -345,8 +468,19 @@ function renderPlayerHand(player, state, isPlayerTurn, phase) {
         } else if (!actionChoice) {
           el.style.cursor = 'pointer';
           if (swapIntent) {
-            // Any card deselects the swap-marked card
-            el.addEventListener('click', () => { swapIntent = null; render(); });
+            // Clicking another card moves the pop-up to that card
+            el.addEventListener('click', e => {
+              e.stopPropagation();
+              swapIntent = null;
+              render();
+              if (isPlayable) {
+                onActionCardClick(card, player);
+              } else if (env && env.state.phase === Phase.PHASE_1) {
+                env.step(0);
+                render();
+                onHandCardClick(hIdx);
+              }
+            });
           } else if (isPlayable) {
             // Active action card: show play/swap popup
             el.addEventListener('click', () => onActionCardClick(card, player));
@@ -365,6 +499,17 @@ function renderPlayerHand(player, state, isPlayerTurn, phase) {
 
     handEl.appendChild(el);
   });
+
+  // Keep the hand's scroll position across re-renders; when a new card gets
+  // selected, bring it fully into view (the hand scrolls on small screens).
+  handEl.scrollLeft = prevScroll;
+  const selEl = handEl.querySelector('.card--selected');
+  const selIdx = selEl ? [...handEl.children].indexOf(selEl) : -1;
+  if (selEl && selIdx !== lastHandSelIdx) {
+    selEl.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }
+  lastHandSelIdx = selIdx;
+  updateCardZoom(selEl);
 }
 
 const PHASE_MSGS = [
