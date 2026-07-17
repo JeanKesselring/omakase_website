@@ -161,7 +161,6 @@ function render() {
 
   updateScore('player-score', calculateScore(player.hand), PLAYER_IDX);
 
-  $('turn-number').textContent = env.turnCount + 1;
   $('deck-count').textContent  = state.deck.length;
   $('deck-count').classList.toggle('pile-count--low', state.deck.length <= 5);
 
@@ -275,6 +274,7 @@ function showSetsModal() {
       const cardW = document.createElement('div');
       cardW.className = 'sets-card ' + (owned.has(name) ? 'sets-card--owned' : 'sets-card--missing');
       cardW.title = CARD_DISPLAY_NAMES[name] ?? name;
+      cardW.dataset.cardName = name; // press-and-hold opens the fullscreen viewer
       const img = document.createElement('img');
       img.src = cardImg(name);
       img.alt = CARD_DISPLAY_NAMES[name] ?? name;
@@ -437,6 +437,25 @@ let dragGhost = null;
 let dragActive = false;
 let dragHoverEl = null;
 
+// Physical tilt: the ghost leans into horizontal movement, more with speed,
+// and settles back upright when the pointer stops.
+const DRAG_TILT_MAX = 16;      // degrees
+const DRAG_TILT_GAIN = 26;     // degrees per px/ms of horizontal velocity
+let dragTilt = 0;
+let dragVx = 0;                // smoothed horizontal velocity (px/ms)
+let dragLastX = 0;
+let dragLastT = 0;
+let dragRafId = null;
+
+function dragTick() {
+  if (!dragActive || !dragGhost) return;
+  dragVx *= 0.86; // velocity fades when no fresh movement arrives
+  const target = Math.max(-DRAG_TILT_MAX, Math.min(DRAG_TILT_MAX, dragVx * DRAG_TILT_GAIN));
+  dragTilt += (target - dragTilt) * 0.22;
+  dragGhost.style.transform = `rotate(${dragTilt.toFixed(2)}deg) scale(1.06)`;
+  dragRafId = requestAnimationFrame(dragTick);
+}
+
 // Same legality rules as the engine's PHASE_2 getLegalActions
 function legalBeltIdxsFor(handCard) {
   const set = new Set();
@@ -474,6 +493,13 @@ function startDrag(e) {
   document.body.appendChild(dragGhost);
   el.classList.add('card--drag-source');
 
+  dragTilt = 0;
+  dragVx = 0;
+  dragLastX = e.clientX;
+  dragLastT = performance.now();
+  cancelAnimationFrame(dragRafId);
+  dragRafId = requestAnimationFrame(dragTick);
+
   document.querySelectorAll('#belt-slots .card').forEach((c, i) => {
     if (legal.has(i)) c.classList.add('card--valid-target');
   });
@@ -481,9 +507,17 @@ function startDrag(e) {
 
 function moveDrag(e) {
   if (!dragGhost) return;
-  const r = dragGhost.getBoundingClientRect();
-  dragGhost.style.left = (e.clientX - r.width / 2) + 'px';
-  dragGhost.style.top = (e.clientY - r.height * 0.75) + 'px';
+  const w = parseFloat(dragGhost.style.width);
+  const h = parseFloat(dragGhost.style.height);
+  dragGhost.style.left = (e.clientX - w / 2) + 'px';
+  dragGhost.style.top = (e.clientY - h * 0.75) + 'px';
+
+  // Blend fresh horizontal velocity into the smoothed value
+  const now = performance.now();
+  const dt = Math.max(1, now - dragLastT);
+  dragVx = dragVx * 0.55 + ((e.clientX - dragLastX) / dt) * 0.45;
+  dragLastX = e.clientX;
+  dragLastT = now;
 
   const over = beltTargetAt(e.clientX, e.clientY);
   if (over !== dragHoverEl) {
@@ -507,6 +541,7 @@ function endDrag(e, cancelled = false) {
   if (!dragActive) return;
   dragActive = false;
   suppressNextClick = true;
+  cancelAnimationFrame(dragRafId);
 
   const beltCards = [...document.querySelectorAll('#belt-slots .card')];
   const target = cancelled ? null : beltTargetAt(e.clientX, e.clientY, cand);
@@ -546,7 +581,7 @@ function executeDragSwap(hIdx, bIdx) {
 // ── Global pointer handlers: long-press (any face-up card) + drag (hand) ─────
 document.addEventListener('pointerdown', e => {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
-  const cardEl = e.target.closest('.card[data-card-name]');
+  const cardEl = e.target.closest('.card[data-card-name], .sets-card[data-card-name]');
   if (!cardEl) return;
 
   lpStart = { x: e.clientX, y: e.clientY };
@@ -624,7 +659,7 @@ document.addEventListener('contextmenu', e => {
 document.addEventListener('click', e => {
   if (!env || env.state.gameOver) return;
   if (e.target.closest('#player-hand')) return;
-  if (e.target.closest('#belt-slots, .controls, .modal-bg, .card-popover, .drawer, .drawer-bg, .topbar')) return;
+  if (e.target.closest('#belt-slots, .controls, .modal-bg, .card-popover')) return;
   let changed = false;
   if (env.state.phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT') {
     p2 = { step: 'SELECT_HAND', handIdx: null, legalBeltIdxs: new Set() };
@@ -1260,54 +1295,137 @@ function onChefsConfirm() {
 }
 
 // ── Chef's Choice position modal ──────────────────────────────────────────────
-function showChefsPositionModal() {
-  const cards  = env.state.chefChoiceSelectedCards;
-  const deckLen = env.state.deck.length;
-  const positions = [0, 0]; // 0 = top of deck, deckLen = bottom
+// Visual deck strip: tap or drag on the face-down stack to slot each card
+// anywhere in the deck. A caption translates the raw position into what it
+// means at the table (cards are dealt top-first: belt, opponent, belt, you…).
+function chefsPosLabel(k, deckLen) {
+  if (deckLen === 0) return 'Top of the deck';
+  if (k >= deckLen)  return `Bottom of the deck (${deckLen} cards deep)`;
+  if (k === 0) return 'Top — next card dealt to the belt';
+  if (k === 1) return "Opponent's next draw";
+  if (k === 2) return 'Dealt to the belt after opponent’s turn';
+  if (k === 3) return 'Your next draw';
+  return `${k} cards deep`;
+}
 
-  $('chefs-pos-modal-instr').textContent = 'Choose where each card goes back in the deck.';
+function showChefsPositionModal() {
+  const cards   = env.state.chefChoiceSelectedCards;
+  const deckLen = env.state.deck.length;
+  const positions = [0, deckLen]; // sensible defaults: one on top, one at the bottom
+  let active = 0;
+
+  $('chefs-pos-modal-instr').textContent = deckLen === 0
+    ? 'The deck is empty — both cards go back on top.'
+    : 'Select a card, then tap or drag on the deck to slide it in anywhere.';
 
   const body = $('chefs-pos-modal-body');
   body.innerHTML = '';
 
-  cards.forEach((card, i) => {
-    const row = document.createElement('div');
-    row.className = 'chefs-pos-row';
-
-    // Mini card thumbnail
-    const thumb = makeCardEl(card, {});
-    thumb.style.cssText = `pointer-events:none; flex-shrink:0; width:60px; height:84px;`;
-    thumb.querySelector('.card__img').style.cssText = 'width:100%;height:100%;object-fit:cover;';
-
-    const pickWrap = document.createElement('div');
-    pickWrap.className = 'chefs-pos-slider';
-
-    const labelEl = document.createElement('span');
-    labelEl.className = 'chefs-pos-label';
-    labelEl.textContent = CARD_DISPLAY_NAMES[cardName(card)] ?? cardName(card);
-
-    const seg = document.createElement('div');
-    seg.className = 'seg';
-    const topBtn = document.createElement('button');
-    topBtn.className = 'seg__btn seg__btn--active';
-    topBtn.textContent = 'Top of deck';
-    const bottomBtn = document.createElement('button');
-    bottomBtn.className = 'seg__btn';
-    bottomBtn.textContent = 'Bottom';
-
-    const select = pos => {
-      positions[i] = pos === 'top' ? 0 : deckLen;
-      topBtn.classList.toggle('seg__btn--active', pos === 'top');
-      bottomBtn.classList.toggle('seg__btn--active', pos === 'bottom');
-    };
-    topBtn.addEventListener('click', () => select('top'));
-    bottomBtn.addEventListener('click', () => select('bottom'));
-    seg.append(topBtn, bottomBtn);
-
-    pickWrap.append(labelEl, seg);
-    row.append(thumb, pickWrap);
-    body.appendChild(row);
+  // Card thumbnails — click to choose which card you are placing
+  const thumbsRow = document.createElement('div');
+  thumbsRow.className = 'chefs-place-thumbs';
+  const thumbEls = cards.map((card, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chefs-place-thumb';
+    const cardEl = makeCardEl(card);
+    cardEl.style.cssText = 'width:72px;height:100px;pointer-events:none;';
+    const lbl = document.createElement('span');
+    lbl.className = 'chefs-place-thumb__label';
+    btn.append(cardEl, lbl);
+    btn.addEventListener('click', () => { active = i; update(); });
+    thumbsRow.appendChild(btn);
+    return { btn, lbl };
   });
+
+  // Deck strip with side rails and per-card insertion markers
+  const stripWrap = document.createElement('div');
+  stripWrap.className = 'deck-strip';
+  const railTop = document.createElement('span');
+  railTop.className = 'deck-strip__rail';
+  railTop.textContent = 'Top';
+  const railBottom = document.createElement('span');
+  railBottom.className = 'deck-strip__rail';
+  railBottom.textContent = 'Bottom';
+
+  const stack = document.createElement('div');
+  stack.className = 'deck-strip__stack';
+  const markers = cards.map((card, i) => {
+    const m = document.createElement('div');
+    m.className = 'deck-marker' + (i === 1 ? ' deck-marker--right' : '');
+    const bar = document.createElement('span');
+    bar.className = 'deck-marker__bar';
+    const chip = document.createElement('span');
+    chip.className = 'deck-marker__chip';
+    const img = document.createElement('img');
+    img.src = cardImg(cardName(card));
+    img.alt = '';
+    img.draggable = false;
+    chip.appendChild(img);
+    m.append(bar, chip);
+    stack.appendChild(m);
+    return m;
+  });
+
+  const caption = document.createElement('p');
+  caption.className = 'deck-strip__caption';
+  const hint = document.createElement('p');
+  hint.className = 'deck-strip__hint';
+  hint.textContent = deckLen > 0 ? 'Assumes no skipped turns or extra draws.' : '';
+
+  // Quick chips for the active card
+  const chips = document.createElement('div');
+  chips.className = 'deck-strip__chips';
+  const mkChip = (label, pos) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn--secondary btn--sm';
+    b.textContent = label;
+    b.addEventListener('click', () => { positions[active] = pos; update(); });
+    return b;
+  };
+  chips.append(mkChip('Top', 0), mkChip('Bottom', deckLen));
+
+  stripWrap.append(railTop, stack, railBottom);
+  body.append(thumbsRow, stripWrap, caption, hint, chips);
+
+  function update() {
+    thumbEls.forEach(({ btn, lbl }, i) => {
+      btn.classList.toggle('chefs-place-thumb--active', i === active);
+      lbl.textContent = positions[i] === 0 ? 'Top'
+        : positions[i] >= deckLen ? 'Bottom'
+        : `${positions[i]} deep`;
+    });
+    markers.forEach((m, i) => {
+      m.style.top = (deckLen === 0 ? 0 : (positions[i] / deckLen) * 100) + '%';
+      m.classList.toggle('deck-marker--active', i === active);
+    });
+    caption.textContent = `${CARD_DISPLAY_NAMES[cardName(cards[active])] ?? ''}: ${chefsPosLabel(positions[active], deckLen)}`;
+  }
+
+  // Tap or drag anywhere on the stack to place the active card
+  const posFromEvent = e => {
+    const r = stack.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    return Math.round(frac * deckLen);
+  };
+  let placing = false;
+  stack.addEventListener('pointerdown', e => {
+    placing = true;
+    stack.setPointerCapture(e.pointerId);
+    positions[active] = posFromEvent(e);
+    update();
+  });
+  stack.addEventListener('pointermove', e => {
+    if (!placing) return;
+    positions[active] = posFromEvent(e);
+    update();
+  });
+  const stopPlacing = () => { placing = false; };
+  stack.addEventListener('pointerup', stopPlacing);
+  stack.addEventListener('pointercancel', stopPlacing);
+
+  update();
 
   const confirmBtn = $('btn-chefs-pos-confirm');
   confirmBtn.onclick = () => {
@@ -2160,7 +2278,6 @@ function startGame() {
   $('discard-modal-bg').hidden   = true;
   $('trash-modal-bg').hidden     = true;
   $('sets-modal-bg').hidden      = true;
-  $('menu-bg').hidden            = true;
   $('thinking-overlay').hidden   = true;
 
   const aiName = agentDisplayName(selectedAgent);
@@ -2291,16 +2408,6 @@ function setupGameScreen() {
   $('btn-pass').addEventListener('click',  () => onPassOrCheck(0));
   $('btn-check').addEventListener('click', () => onPassOrCheck(1));
 
-  $('btn-menu').addEventListener('click',       () => { $('menu-bg').hidden = false; });
-  $('btn-close-menu').addEventListener('click', () => { $('menu-bg').hidden = true; });
-  $('menu-bg').addEventListener('click', e => {
-    if (e.target === $('menu-bg')) $('menu-bg').hidden = true;
-  });
-  $('btn-new-game-menu').addEventListener('click', () => {
-    $('menu-bg').hidden = true;
-    requestExternalStartScreen();
-  });
-
   $('btn-chefs-confirm').addEventListener('click', onChefsConfirm);
 
   // Sets progress modal
@@ -2340,6 +2447,15 @@ function setupGameOverScreen() {
 setupNewGameScreen();
 setupGameScreen();
 setupGameOverScreen();
+
+// Opt-in hooks for local testing (?debug=1) — never used by the app itself
+if (URL_PARAMS.get('debug') === '1') {
+  window.__omakase = {
+    get env() { return env; },
+    render,
+    showChefsPositionModal,
+  };
+}
 
 if (URL_PARAMS.get('autostart') === '1') {
   const activeCard = [...document.querySelectorAll('.agent-card')]

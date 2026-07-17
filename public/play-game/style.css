@@ -341,68 +341,33 @@ body {
   letter-spacing: .08em; color: var(--muted);
 }
 
-/* Drawer set: header row + card image strip */
-.drawer__set-header {
-  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
-}
-.drawer__set-header strong { font-size: 13px; font-weight: 600; color: var(--ink); }
-.drawer__set-price { font-size: 12px; color: var(--muted); }
-.drawer__set-cards {
-  display: flex; gap: 4px; overflow-x: auto; padding-bottom: 4px;
-}
-.drawer__set-cards img {
-  height: 96px; width: auto; flex-shrink: 0; border-radius: 2px;
-  object-fit: contain;
-}
-
 /* ══ Game screen layout ═══════════════════════════════════════════════════ */
 #screen-game {
   display: grid;
   grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(12rem, 15rem);
-  grid-template-rows: auto auto 1fr minmax(188px, auto);
+  grid-template-rows: auto 1fr minmax(188px, auto);
   background: var(--paper);
   overflow: visible;
 }
 
-/* Topbar — on-brand periwinkle */
-.topbar {
-  display: flex;
-  grid-row: 1;
-  grid-column: 1 / -1;
-  min-height: 44px;
-  align-items: center; justify-content: space-between;
-  padding: 0 16px;
-  background: var(--peri-deep);
-  border-bottom: 1px solid rgba(99,116,181,.25);
-  z-index: var(--z-ctrl);
-}
-.topbar__logo {
-  font-family: var(--font-d); font-size: 20px; color: var(--cream);
-  letter-spacing: .06em; font-variation-settings: "opsz" 144;
-}
-.topbar__center { display: flex; align-items: baseline; gap: 6px; }
-.topbar__label { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: rgba(245,233,201,.55); }
-.topbar__turn {
-  font-family: var(--font-d); font-size: 20px; font-weight: 600;
-  color: var(--cream); font-variant-numeric: tabular-nums;
-  font-variation-settings: "opsz" 144;
-}
-.topbar__right { display: flex; align-items: center; gap: 10px; }
-#btn-menu { color: rgba(245,233,201,.65); border-color: transparent; }
-#btn-menu:hover { color: var(--cream); background: rgba(255,255,255,.15); }
+/* Embedded autostart: the internal start screen must never flash */
+.autostart #screen-newgame { display: none; }
 
 /* Opponent zone */
 .opp-zone {
-  grid-row: 2;
+  grid-row: 1;
   grid-column: 1 / -1;
   display: flex; align-items: center;
   padding: 8px 16px; gap: 12px;
   background: var(--paper);
   border-bottom: 0;
   min-height: 108px;
+  z-index: 80;
 }
 .opp-zone__info { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.opp-hand { display: flex; gap: 5px; align-items: center; justify-content: center; overflow: hidden; flex: 1; }
+/* overflow stays visible and the zone sits above the belt so lifted/animated
+   opponent cards are never clipped or painted over */
+.opp-hand { display: flex; gap: 5px; align-items: center; justify-content: center; overflow: visible; flex: 1; }
 
 /* Face-down card backs for opponent hand — same size as belt cards */
 .card-back {
@@ -435,7 +400,7 @@ body {
 
 /* ══ Belt section — deck | belt | trash ══════════════════════════════════ */
 .belt-section {
-  grid-row: 3;
+  grid-row: 2;
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 840px) minmax(0, 1fr);
@@ -532,7 +497,9 @@ body {
 }
 .belt-slots {
   display: flex; gap: 8px; justify-content: flex-start;
-  padding: 8px 4px;
+  /* generous vertical padding: overflow-x:auto forces vertical clipping too,
+     so lifted/outlined cards need headroom inside the scroller */
+  padding: 14px 4px;
   overflow-x: auto; overflow-y: visible; scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -607,7 +574,7 @@ body {
 
 /* Player zone */
 .player-zone {
-  grid-row: 4;
+  grid-row: 3;
   grid-column: 1 / 3;
   display: grid;
   grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
@@ -692,8 +659,19 @@ body {
   width: 52px; aspect-ratio: 5 / 7;
   border: 2px solid var(--ink); overflow: hidden;
   background: var(--cream); position: relative;
+  cursor: zoom-in;
+  touch-action: manipulation;
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
-.sets-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (hover: hover) {
+  .sets-card:hover { transform: translateY(-3px); box-shadow: 3px 3px 0 var(--ink); }
+}
+.sets-card:active { transform: scale(.95); }
+.sets-card img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  -webkit-touch-callout: none; -webkit-user-drag: none;
+  user-select: none; -webkit-user-select: none;
+}
 .sets-card--missing img { filter: grayscale(1) opacity(.35); }
 .sets-card--owned { outline: 2px solid var(--nori); outline-offset: 1px; }
 
@@ -762,7 +740,9 @@ body {
 .drag-ghost {
   position: fixed; margin: 0;
   z-index: 800; pointer-events: none;
-  transform: rotate(-4deg) scale(1.06);
+  /* rotation is driven per-frame from JS (velocity-based tilt) */
+  transform: scale(1.06);
+  transform-origin: 50% 75%; /* pivots around the grip point */
   box-shadow: var(--shadow-card-lift);
   transition: none;
 }
@@ -775,7 +755,7 @@ body {
 
 /* Controls */
 .controls {
-  grid-row: 4;
+  grid-row: 3;
   grid-column: 3;
   display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px;
   background: var(--paper); padding: 38px 22px 16px 8px;
@@ -1043,24 +1023,84 @@ body {
   flex: 1; min-height: 0; overflow-y: auto;
   padding-right: 4px;
 }
-.chefs-pos-row {
-  display: flex; gap: 16px; align-items: center;
-  padding: 12px; background: var(--cream-soft);
-  border-radius: 6px; border: 1px solid var(--rule);
+/* ── Chef's Choice deck placement — visual deck strip ─────────────────────── */
+.chefs-place-thumbs {
+  display: flex; gap: 14px; justify-content: center;
+  margin-bottom: 14px;
 }
-.chefs-pos-slider { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.chefs-pos-label { font-size: 12px; color: var(--ink); font-weight: 700; }
+.chefs-place-thumb {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: none; border: none; padding: 4px; cursor: pointer;
+}
+.chefs-place-thumb .card { box-shadow: 3px 3px 0 var(--ink); }
+.chefs-place-thumb--active .card {
+  outline: 3px solid var(--salmon);
+  outline-offset: 2px;
+}
+.chefs-place-thumb__label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted);
+}
+.chefs-place-thumb--active .chefs-place-thumb__label { color: var(--salmon-ink); }
 
-/* Segmented Top/Bottom toggle */
-.seg { display: flex; border: 2px solid var(--ink); width: fit-content; }
-.seg__btn {
-  font-family: var(--font-b); font-size: 12px; font-weight: 700;
-  background: #fff; color: var(--body);
-  border: 0; padding: 7px 14px; cursor: pointer;
-  transition: background var(--t-hover);
+.deck-strip {
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+  padding: 0 44px; /* room for the marker chips on either side */
 }
-.seg__btn + .seg__btn { border-left: 2px solid var(--ink); }
-.seg__btn--active { background: var(--mustard); color: var(--ink); }
+.deck-strip__rail {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .16em; color: var(--muted); text-align: center;
+}
+.deck-strip__stack {
+  position: relative;
+  height: min(30vh, 220px);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--peri) 0 5px,
+    var(--peri-deep) 5px 6px
+  );
+  touch-action: none;
+  cursor: pointer;
+}
+.deck-marker {
+  position: absolute; left: 0; right: 0; height: 0;
+  pointer-events: none;
+  transition: top 60ms linear;
+}
+.deck-marker__bar {
+  position: absolute; left: -6px; right: -6px; top: -2px; height: 4px;
+  background: var(--cream);
+  border: 1px solid var(--ink);
+  opacity: .75;
+}
+.deck-marker--active .deck-marker__bar { background: var(--salmon); opacity: 1; }
+.deck-marker__chip {
+  position: absolute; top: -14px; left: -42px;
+  width: 22px; height: 30px;
+  border: 2px solid var(--ink); background: var(--cream);
+  overflow: hidden;
+  box-shadow: 2px 2px 0 var(--ink);
+  opacity: .7;
+}
+.deck-marker--right .deck-marker__chip { left: auto; right: -42px; }
+.deck-marker--active .deck-marker__chip { opacity: 1; outline: 2px solid var(--salmon); }
+.deck-marker__chip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.deck-strip__caption {
+  margin-top: 10px;
+  font-size: 12px; font-weight: 700; color: var(--salmon-ink);
+  text-align: center;
+}
+.deck-strip__hint {
+  font-size: 10px; color: var(--muted); font-style: italic;
+  text-align: center; margin-top: 2px;
+}
+.deck-strip__chips {
+  display: flex; gap: 8px; justify-content: center;
+  margin-top: 10px;
+}
 
 /* Card popover — anchored Play / Swap choice next to the tapped action card */
 .card-popover {
@@ -1089,54 +1129,6 @@ body {
   from { opacity: 0; transform: translateY(6px) scale(.96); }
   to   { opacity: 1; transform: none; }
 }
-
-/* Drawer */
-.drawer-bg { position: absolute; inset: 0; background: rgba(27,30,46,.45); z-index: var(--z-modal); }
-.drawer-bg[hidden] { display: none; }
-.drawer {
-  position: absolute; top: 0; right: 0; bottom: 0;
-  width: min(300px, 92vw);
-  background: var(--paper);
-  border-left: 2px solid var(--ink);
-  display: flex; flex-direction: column; padding: 14px 16px; gap: 0;
-  padding-right: max(16px, env(safe-area-inset-right));
-  overflow: hidden;
-}
-.drawer__header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 10px;
-}
-.drawer__close {
-  background: none; border: none;
-  color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 8px;
-}
-.drawer__close:hover { color: var(--body); }
-.drawer__body { display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; min-height: 0; }
-.drawer__divider {
-  border: none; border-top: 1px solid var(--rule);
-  margin: 12px 0;
-}
-.drawer__sets-title {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .12em; color: var(--muted); margin-bottom: 8px;
-}
-.drawer__set {
-  display: flex; flex-direction: column; gap: 2px;
-  margin-bottom: 10px;
-}
-.drawer__set strong {
-  font-size: 13px; font-weight: 600; color: var(--ink);
-}
-.drawer__set span {
-  font-size: 11px; color: var(--muted); line-height: 1.5;
-}
-.drawer__link {
-  font-size: 12px; font-weight: 600; text-decoration: none; color: var(--peri-deep);
-  padding: 6px 0; border-bottom: 1px solid currentColor;
-  display: block; width: fit-content;
-  transition: color var(--t-hover);
-}
-.drawer__link:hover { color: var(--peri); }
 
 /* ══ Game over ════════════════════════════════════════════════════════════ */
 #screen-gameover {
@@ -1328,36 +1320,14 @@ body {
     grid-template-columns: 1fr;
   }
 
-  /* Topbar → floating burger only, taken out of grid */
-  .topbar {
-    position: fixed;
-    top: max(8px, env(safe-area-inset-top));
-    right: max(10px, env(safe-area-inset-right));
-    background: transparent; border: none; padding: 0;
-    min-height: 0;
-    z-index: var(--z-overlay);
-  }
-  .topbar__logo   { display: none; }
-  .topbar__center { display: none; }
-  #btn-menu {
-    background: rgba(27,30,46,0.65);
-    color: var(--cream);
-    border-radius: 6px;
-    width: 34px; height: 34px;
-    padding: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0,0,0,.35);
-  }
   .game-ending-banner { top: 0; }
 
-  /* Row 1: Opponent card backs, centered, dark belt bg */
+  /* Row 1: Opponent card backs, centered — extra top padding gives the
+     AI-pick lift animation headroom instead of clipping at the screen edge */
   .opp-zone {
     grid-row: 1; grid-column: 1 / -1;
     display: flex; justify-content: center; align-items: center;
-    padding: 8px 0;
+    padding: calc(16px + env(safe-area-inset-top)) 0 8px;
     background: var(--paper);
     border-bottom: 0;
     min-height: 0;
@@ -1373,7 +1343,7 @@ body {
   .phase-bar {
     order: -2;
     flex-direction: row; justify-content: center;
-    padding: 3px 44px 0 8px;
+    padding: 3px 8px 0;
     gap: 0;
   }
   .phase-pips { display: none; }
@@ -1415,7 +1385,7 @@ body {
   .belt-slots {
     flex: 0 0 auto;
     align-items: center;
-    padding: 0.25rem;
+    padding: 0.5rem 0.25rem;
     gap: 4px;
     overflow-x: auto;
   }
@@ -1489,20 +1459,30 @@ body {
     border-top: 0;
     border-left: 0;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
   }
   .controls .score-box {
+    flex: 0 0 auto;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 1px;
-    padding: 0.35rem 0.5rem;
+    margin-bottom: 0;
+    padding: 0.35rem 0.6rem;
     border: 2px solid var(--ink);
     background: #fff;
     box-shadow: 3px 3px 0 var(--ink);
   }
   .controls .score-box__label { font-size: 9px; }
   .controls .score-box__value { font-size: 18px; }
-  .controls .btn { min-height: 2.4rem; padding: 0.45rem 0.55rem; font-size: 11px; }
+  .controls .btn {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    padding: 0.45rem 0.4rem;
+    font-size: 11px;
+    justify-content: center;
+  }
 
   #toast-container { bottom: calc(8px + env(safe-area-inset-bottom)); }
 
@@ -1588,19 +1568,9 @@ body {
     grid-template-columns: 1fr auto;
   }
 
-  .topbar { position: fixed; top: max(4px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); background: transparent; border: none; padding: 0; min-height: 0; z-index: var(--z-overlay); }
-  .topbar__logo   { display: none; }
-  .topbar__center { display: none; }
-  #btn-menu {
-    background: rgba(27,30,46,0.65); color: var(--cream); border-radius: 6px;
-    width: 28px; height: 28px; padding: 0; font-size: 13px;
-    display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0,0,0,.35);
-  }
   .game-ending-banner { top: 0; }
 
-  .opp-zone { grid-row: 1; grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: 3px 0; background: var(--belt-bg); min-height: 0; border-bottom: 1px solid rgba(200,169,110,.08); }
+  .opp-zone { grid-row: 1; grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding: calc(10px + env(safe-area-inset-top)) 0 3px; background: var(--belt-bg); min-height: 0; border-bottom: 1px solid rgba(200,169,110,.08); }
   .opp-zone__info { display: none; }
   #opp-hand .card-back { width: var(--card-w); height: var(--card-h); }
 
@@ -1608,7 +1578,7 @@ body {
   .phase-bar {
     order: -2;
     flex-direction: row; justify-content: center;
-    padding: 2px 40px 0 8px;
+    padding: 2px 8px 0;
   }
   .phase-pips { display: none; }
   .phase-msg { font-size: 10px; text-align: center; max-width: none; }

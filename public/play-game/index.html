@@ -9,6 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,500..600&family=Inter+Tight:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // When embedded with ?autostart=1, never paint the internal start screen —
+    // the game module switches straight to the table once it loads.
+    if (new URLSearchParams(location.search).get('autostart') === '1') {
+      document.documentElement.classList.add('autostart');
+    }
+  </script>
 </head>
 <body>
 
@@ -105,17 +112,6 @@
        SCREEN 2: GAME TABLE
   ════════════════════════════════════ -->
   <div id="screen-game" class="screen">
-
-    <header class="topbar">
-      <span class="topbar__logo" aria-label="Omakase">お任せ</span>
-      <div class="topbar__center">
-        <span class="topbar__label">Turn</span>
-        <span id="turn-number" class="topbar__turn">1</span>
-      </div>
-      <div class="topbar__right">
-        <button id="btn-menu" class="btn btn--ghost btn--sm" aria-label="Menu">☰</button>
-      </div>
-    </header>
 
     <!-- Opponent row -->
     <section class="opp-zone" aria-label="Opponent">
@@ -300,67 +296,6 @@
         <div id="sets-modal-body" class="sets-modal-body"></div>
         <div class="modal__footer modal__footer--right">
           <button id="btn-close-sets-modal" class="btn btn--secondary btn--sm">Close</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Game menu drawer -->
-    <div id="menu-bg" class="drawer-bg" hidden>
-      <div class="drawer" role="dialog" aria-modal="true">
-        <div class="drawer__header">
-          <button id="btn-new-game-menu" class="btn btn--salmon btn--sm">New Game</button>
-          <button id="btn-close-menu" class="drawer__close" aria-label="Close">✕</button>
-        </div>
-        <div class="drawer__body">
-          <hr class="drawer__divider" style="margin-top:0">
-          <div class="drawer__sets">
-            <p class="drawer__sets-title">Sets</p>
-            <div class="drawer__set">
-              <div class="drawer__set-header"><strong>Omakase</strong><span class="drawer__set-price">¥6,000</span></div>
-              <div class="drawer__set-cards">
-                <img src="../cards/fatty_tuna.png" alt="Fatty Tuna" title="Fatty Tuna">
-                <img src="../cards/conger_eel.png" alt="Conger Eel" title="Conger Eel">
-                <img src="../cards/crab.png" alt="Crab" title="Crab">
-                <img src="../cards/tuna.png" alt="Tuna" title="Tuna">
-                <img src="../cards/salmon.png" alt="Salmon" title="Salmon">
-                <img src="../cards/salmon_roe.png" alt="Salmon Roe" title="Salmon Roe">
-              </div>
-            </div>
-            <div class="drawer__set">
-              <div class="drawer__set-header"><strong>Sakura</strong><span class="drawer__set-price">¥4,500</span></div>
-              <div class="drawer__set-cards">
-                <img src="../cards/conger_eel.png" alt="Conger Eel" title="Conger Eel">
-                <img src="../cards/crab.png" alt="Crab" title="Crab">
-                <img src="../cards/tuna.png" alt="Tuna" title="Tuna">
-                <img src="../cards/shrimp.png" alt="Shrimp" title="Shrimp">
-                <img src="../cards/tuna_roll.png" alt="Tuna Roll" title="Tuna Roll">
-                <img src="../cards/salmon_roll.png" alt="Salmon Roll" title="Salmon Roll">
-              </div>
-            </div>
-            <div class="drawer__set">
-              <div class="drawer__set-header"><strong>Ume</strong><span class="drawer__set-price">¥3,500</span></div>
-              <div class="drawer__set-cards">
-                <img src="../cards/salmon_roe.png" alt="Salmon Roe" title="Salmon Roe">
-                <img src="../cards/salmon.png" alt="Salmon" title="Salmon">
-                <img src="../cards/shrimp.png" alt="Shrimp" title="Shrimp">
-                <img src="../cards/tuna_roll.png" alt="Tuna Roll" title="Tuna Roll">
-                <img src="../cards/salmon_roll.png" alt="Salmon Roll" title="Salmon Roll">
-                <img src="../cards/omelette.png" alt="Omelette" title="Omelette">
-              </div>
-            </div>
-            <div class="drawer__set">
-              <div class="drawer__set-header"><strong>Kids</strong><span class="drawer__set-price">¥2,000</span></div>
-              <div class="drawer__set-cards">
-                <img src="../cards/omelette.png" alt="Omelette" title="Omelette">
-                <img src="../cards/cucumber_roll.png" alt="Cucumber Roll" title="Cucumber Roll">
-                <img src="../cards/tofu.png" alt="Tofu" title="Tofu">
-                <img src="../cards/Karaage.png" alt="Karaage" title="Karaage">
-              </div>
-            </div>
-          </div>
-          <hr class="drawer__divider">
-          <a href="https://www.youtube.com/watch?v=lOHlmx0hAdM" class="drawer__link" target="_blank" rel="noopener">Watch tutorial ↗</a>
-          <a href="https://omakasegame.com/" class="drawer__link" target="_blank" rel="noopener">Buy the game ↗</a>
         </div>
       </div>
     </div>
