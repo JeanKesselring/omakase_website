@@ -9,7 +9,7 @@ let agent = null;
 let agentVersion = null;
 
 self.onmessage = function(e) {
-  const { type, envState, turnCount, numPlayers, legalActions, nSimulations, timeBudgetMs, agentType, c, rolloutDepth } = e.data;
+  const { type, envState, turnCount, numPlayers, legalActions, nSimulations, timeBudgetMs, agentType, c, rolloutDepth, reqId } = e.data;
 
   if (type === 'choose') {
     // Re-create agent if version changed (e.g. user switches between MCTS and MCTS+)
@@ -34,6 +34,6 @@ self.onmessage = function(e) {
     env.turnCount = turnCount;
 
     const action = agent.chooseAction(env, legalActions);
-    self.postMessage({ type: 'result', action });
+    self.postMessage({ type: 'result', action, reqId });
   }
 };

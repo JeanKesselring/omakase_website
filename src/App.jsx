@@ -325,12 +325,16 @@ function HomePage({ t, go }) {
           <h1>Omakase</h1>
           <p className="hero-lede">{t.hero.lede}</p>
           <div className="hero-actions">
-            <button className="button primary" onClick={() => go('stores')}>
+            <button className="button primary" onClick={() => go('play')}>
+              <Play size={18} />
+              {t.hero.play}
+            </button>
+            <button className="button secondary" onClick={() => go('stores')}>
               <ShoppingBag size={18} />
               {t.hero.buy}
             </button>
-            <button className="button secondary" onClick={() => go('rules')}>
-              <BookOpen size={18} />
+            <button className="text-link" onClick={() => go('rules')}>
+              <BookOpen size={16} />
               {t.hero.learn}
             </button>
           </div>

@@ -118,6 +118,7 @@ const en = {
   hero: {
     eyebrow: 'A tactical sushi card game',
     lede: 'Collect elegant sushi, complete menu sets, and time your action cards before the conveyor belt changes everything.',
+    play: 'Play now',
     buy: 'Find a store',
     learn: 'Learn the rules',
     productLabel: 'Omakase product presentation'
@@ -245,7 +246,7 @@ const en = {
     selectHand: 'Select one card from your hand.',
     selectBelt: 'Now select a card on the conveyor belt.',
     playAction: 'Play one action card, or continue.',
-    thinking: 'Chef is thinking',
+    thinking: 'Opponent is thinking',
     discard: 'Discard down to your hand limit.',
     chefsChoice: 'Choose two cards to return to the deck.',
     chefPositions: 'Choose where those cards return. 0 is the top of the deck.',
@@ -266,7 +267,7 @@ const en = {
 
 const fr = {
   nav: { ...en.nav, home: 'Accueil', rules: 'Règles', stores: 'Boutiques', play: 'Jouer', tagline: 'Jeu de cartes sushi', language: 'Langue', openMenu: 'Ouvrir le menu', closeMenu: 'Fermer le menu' },
-  hero: { ...en.hero, eyebrow: 'Un jeu de cartes tactique autour du sushi', lede: 'Collectionnez des sushis, complétez des menus et jouez vos cartes action avant que le tapis ne change tout.', buy: 'Trouver une boutique', learn: 'Apprendre les règles' },
+  hero: { ...en.hero, eyebrow: 'Un jeu de cartes tactique autour du sushi', lede: 'Collectionnez des sushis, complétez des menus et jouez vos cartes action avant que le tapis ne change tout.', play: 'Jouer maintenant', buy: 'Trouver une boutique', learn: 'Apprendre les règles' },
   media: { ...en.media, aria: 'Médias produit', frontAlt: 'Boîte du jeu Omakase', items: { menu: 'Menu leporello', cards: 'Cartes sur la table', sleeve: 'Étui et packaging', videoOne: 'Vidéo produit', videoTwo: 'Vidéo de table' } },
   preview: { eyebrow: 'Déroulement', title: 'Un tour est simple. Le timing ne l’est pas.', body: 'Le tapis roulant crée une petite décision à chaque tour : prendre ce qui aide maintenant ou préparer un meilleur coup.', cta: 'Ouvrir toutes les règles', steps: [{ title: 'Piocher', body: 'Commencez par piocher une carte du deck.' }, { title: 'Agir', body: 'Vous pouvez jouer une carte action avant ou après l’échange.' }, { title: 'Échanger', body: 'Échangez une carte de votre main avec une carte du tapis.' }, { title: 'Déplacer le tapis', body: 'Ajoutez une carte, décalez le tapis et défaussez la carte qui sort.' }] },
   rules: {
@@ -324,7 +325,7 @@ const fr = {
 
 const de = {
   nav: { ...en.nav, home: 'Start', rules: 'Regeln', stores: 'Läden', play: 'Spielen', tagline: 'Sushi-Kartenspiel', language: 'Sprache', openMenu: 'Menü öffnen', closeMenu: 'Menü schließen' },
-  hero: { ...en.hero, eyebrow: 'Ein taktisches Sushi-Kartenspiel', lede: 'Sammle edle Sushi, vervollständige Menüs und spiele Aktionskarten, bevor das Förderband alles verändert.', buy: 'Laden finden', learn: 'Regeln lernen' },
+  hero: { ...en.hero, eyebrow: 'Ein taktisches Sushi-Kartenspiel', lede: 'Sammle edle Sushi, vervollständige Menüs und spiele Aktionskarten, bevor das Förderband alles verändert.', play: 'Jetzt spielen', buy: 'Laden finden', learn: 'Regeln lernen' },
   media: { ...en.media, aria: 'Produktmedien', frontAlt: 'Omakase Spielschachtel', items: { menu: 'Menü-Leporello', cards: 'Karten auf dem Tisch', sleeve: 'Hülle und Verpackung', videoOne: 'Produktvideo', videoTwo: 'Tischvideo' } },
   preview: { eyebrow: 'Spielablauf', title: 'Ein Zug ist einfach. Das Timing nicht.', body: 'Das Förderband erzeugt in jedem Zug eine kleine Entscheidung: sofort nehmen, was hilft, oder etwas Stärkeres vorbereiten.', cta: 'Alle Regeln öffnen', steps: [{ title: 'Ziehen', body: 'Ziehe zuerst eine Karte vom Deck.' }, { title: 'Aktion', body: 'Du darfst eine Aktionskarte vor oder nach dem Tausch spielen.' }, { title: 'Tauschen', body: 'Tausche eine Karte aus deiner Hand mit einer Karte vom Band.' }, { title: 'Band bewegen', body: 'Lege eine neue Karte an, verschiebe das Band und wirf die herausfallende Karte ab.' }] },
   rules: {
@@ -382,7 +383,7 @@ const de = {
 
 const ja = {
   nav: { ...en.nav, home: 'ホーム', rules: 'ルール', stores: '店舗', play: 'プレイ', tagline: '寿司カードゲーム', language: '言語', openMenu: 'メニューを開く', closeMenu: 'メニューを閉じる' },
-  hero: { ...en.hero, eyebrow: '戦略的な寿司カードゲーム', lede: '美しい寿司を集め、メニューセットを完成させ、ベルトが動く前にアクションカードを使いこなしましょう。', buy: '店舗を探す', learn: 'ルールを見る' },
+  hero: { ...en.hero, eyebrow: '戦略的な寿司カードゲーム', lede: '美しい寿司を集め、メニューセットを完成させ、ベルトが動く前にアクションカードを使いこなしましょう。', play: '今すぐプレイ', buy: '店舗を探す', learn: 'ルールを見る' },
   media: { ...en.media, aria: '商品メディア', frontAlt: 'Omakaseの箱', items: { menu: 'メニュー冊子', cards: 'テーブルのカード', sleeve: 'スリーブとパッケージ', videoOne: '商品動画', videoTwo: 'テーブル動画' } },
   preview: { eyebrow: '流れ', title: '手番は簡単。でもタイミングが大事。', body: 'コンベアベルトは毎ターン小さな選択を生みます。今ほしいカードを取るか、もっと強い手を準備するか。', cta: '詳しいルールを見る', steps: [{ title: '引く', body: 'まず山札から1枚引きます。' }, { title: '行動', body: '交換の前か後に、アクションカードを1枚だけ使えます。' }, { title: '交換', body: '手札1枚とベルト上のカード1枚を交換します。' }, { title: 'ベルトを動かす', body: '新しいカードを加え、ベルトをずらし、落ちたカードを捨てます。' }] },
   rules: {

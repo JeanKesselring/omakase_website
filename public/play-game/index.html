@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Omakase — A sushi card game</title>
   <link rel="icon" type="image/png" href="../cards/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,6 +197,7 @@
         <span class="player-label" id="player-label">You</span>
       </div>
       <div class="passive-effects" id="passive-effects" aria-label="Active effects"></div>
+      <div class="set-progress" id="set-progress" aria-label="Menu set progress"></div>
       <div class="player-hand" id="player-hand" role="list" aria-label="Your cards"></div>
     </section>
 
@@ -206,6 +207,7 @@
         <span class="score-box__label">Score</span>
         <span class="score-box__value" id="player-score">¥0</span>
       </div>
+      <button id="btn-sets" class="btn btn--secondary">Sets</button>
       <button id="btn-pass" class="btn btn--secondary">Skip Action</button>
       <button id="btn-check" class="btn btn--danger" disabled>Check</button>
     </div>
@@ -213,7 +215,7 @@
     <!-- Thinking overlay -->
     <div id="thinking-overlay" class="thinking-overlay" hidden aria-live="polite">
       <div class="thinking-overlay__box">
-        <p class="thinking-overlay__text" id="thinking-text">Chef is thinking...</p>
+        <p class="thinking-overlay__text" id="thinking-text">Opponent is thinking...</p>
         <div class="thinking-dots" aria-hidden="true">
           <span></span><span></span><span></span>
         </div>
@@ -228,6 +230,7 @@
         <div id="chefs-modal-cards" class="modal__cards"></div>
         <div class="modal__footer">
           <span id="chefs-select-count" class="modal__count">0 / 2 selected</span>
+          <button id="btn-chefs-confirm" class="btn btn--salmon btn--sm" disabled>Confirm</button>
         </div>
       </div>
     </div>
@@ -250,15 +253,21 @@
         <h2 id="pick-opp-modal-title" class="modal__title">Pick a Card</h2>
         <p id="pick-opp-modal-instr" class="modal__instr">Select a card from opponent's hand</p>
         <div id="pick-opp-modal-cards" class="modal__cards"></div>
+        <div class="modal__footer modal__footer--right">
+          <button id="btn-pick-opp-cancel" class="btn btn--secondary btn--sm">Cancel</button>
+        </div>
       </div>
     </div>
 
     <!-- Sake return modal -->
     <div id="sake-return-modal-bg" class="modal-bg" hidden>
       <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sake-return-modal-title">
-        <h2 id="sake-return-modal-title" class="modal__title">Give a Card</h2>
-        <p class="modal__instr">Choose a card from your hand to give to your opponent</p>
+        <h2 id="sake-return-modal-title" class="modal__title">Sake — Step 2 of 2</h2>
+        <p class="modal__instr">Give one of your cards to your opponent</p>
         <div id="sake-return-modal-cards" class="modal__cards"></div>
+        <div class="modal__footer modal__footer--right">
+          <button id="btn-sake-return-cancel" class="btn btn--secondary btn--sm">Cancel</button>
+        </div>
       </div>
     </div>
 
@@ -279,6 +288,18 @@
         <div id="trash-modal-cards" class="modal__cards modal__cards--scroll"></div>
         <div class="modal__footer">
           <button id="btn-close-trash-modal" class="btn btn--secondary btn--sm">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu sets progress modal -->
+    <div id="sets-modal-bg" class="modal-bg" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sets-modal-title">
+        <h2 id="sets-modal-title" class="modal__title">Menu Sets</h2>
+        <p class="modal__instr">Collect every card of a menu to complete it. A complete menu lets you call Check.</p>
+        <div id="sets-modal-body" class="sets-modal-body"></div>
+        <div class="modal__footer modal__footer--right">
+          <button id="btn-close-sets-modal" class="btn btn--secondary btn--sm">Close</button>
         </div>
       </div>
     </div>

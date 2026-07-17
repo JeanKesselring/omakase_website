@@ -21,9 +21,11 @@
   /* Belt surface — dark lacquer */
   --belt-bg: #fff9f1;
 
-  /* Card geometry — 5:7 aspect ratio matching the physical card PNGs */
-  --card-w:  120px;
-  --card-h:  168px;
+  /* Card geometry — 5:7 aspect ratio matching the physical card PNGs.
+     Fluid between phone-landscape and full desktop so mid-size screens
+     (tablets, tall landscape phones) scale instead of overflowing. */
+  --card-w:  clamp(76px, 9vw, 120px);
+  --card-h:  calc(var(--card-w) * 1.4);
   --card-r:  6px;
 
   /* Pile dimensions (deck/trash stacks alongside belt) */
@@ -357,15 +359,17 @@ body {
 #screen-game {
   display: grid;
   grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) minmax(12rem, 15rem);
-  grid-template-rows: auto 1fr minmax(188px, auto);
+  grid-template-rows: auto auto 1fr minmax(188px, auto);
   background: var(--paper);
   overflow: visible;
 }
 
 /* Topbar — on-brand periwinkle */
 .topbar {
-  display: none;
+  display: flex;
   grid-row: 1;
+  grid-column: 1 / -1;
+  min-height: 44px;
   align-items: center; justify-content: space-between;
   padding: 0 16px;
   background: var(--peri-deep);
@@ -389,7 +393,7 @@ body {
 
 /* Opponent zone */
 .opp-zone {
-  grid-row: 1;
+  grid-row: 2;
   grid-column: 1 / -1;
   display: flex; align-items: center;
   padding: 8px 16px; gap: 12px;
@@ -431,7 +435,7 @@ body {
 
 /* ══ Belt section — deck | belt | trash ══════════════════════════════════ */
 .belt-section {
-  grid-row: 2;
+  grid-row: 3;
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 840px) minmax(0, 1fr);
@@ -442,9 +446,9 @@ body {
   overflow: visible;
 }
 
-/* Deck / Trash pile zones — removed from the table view (kept in DOM for JS) */
+/* Deck / Trash pile zones — flank the belt */
 .pile-zone {
-  display: none;
+  display: flex;
   flex-direction: column; align-items: center;
   justify-self: center;
   gap: 5px; flex-shrink: 0;
@@ -483,6 +487,7 @@ body {
   color: var(--red, var(--salmon-ink)); font-variant-numeric: tabular-nums;
   font-variation-settings: "opsz" 144;
 }
+.pile-count--low { font-weight: 800; animation: check-pulse 2s ease-in-out infinite; }
 .pile-empty {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -602,11 +607,11 @@ body {
 
 /* Player zone */
 .player-zone {
-  grid-row: 3;
+  grid-row: 4;
   grid-column: 1 / 3;
   display: grid;
   grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
   align-items: center;
   column-gap: 18px;
   background: var(--paper);
@@ -639,9 +644,62 @@ body {
 .effect-badge--nori    { background: #fff;  color: var(--ink); }
 .effect-badge--salmon  { background: var(--salmon); color: var(--ink); }
 
+/* ── Menu set progress (desktop left column; opens the sets modal) ─────────── */
+.set-progress {
+  grid-column: 1;
+  grid-row: 4;
+  align-self: start;
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 12px;
+  padding-right: 8px;
+}
+.set-progress__title {
+  font-size: 9px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 2px;
+}
+.set-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-family: var(--font-b); font-size: 11px; font-weight: 600; color: var(--body);
+  background: #fff; border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  padding: 3px 8px; cursor: pointer;
+  transition: background var(--t-hover);
+}
+.set-row:hover { background: var(--cream-soft); }
+.set-row--done { background: var(--salmon); color: #fff; }
+.set-row--done:hover { background: var(--salmon); }
+.set-row__count { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--muted); }
+.set-row--done .set-row__count { color: #fff; }
+
+/* Sets button lives in the controls on small screens only */
+#btn-sets { display: none; }
+
+/* Sets modal body */
+.sets-modal-body {
+  display: flex; flex-direction: column; gap: 14px;
+  flex: 1; min-height: 0; overflow-y: auto;
+  padding-right: 4px; margin-bottom: 12px;
+}
+.sets-modal-set__header {
+  display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px;
+}
+.sets-modal-set__header strong { font-size: 13px; color: var(--ink); }
+.sets-modal-set__count { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sets-modal-set__value { font-size: 12px; color: var(--salmon-ink); font-weight: 700; margin-left: auto; }
+.sets-cards { display: flex; gap: 6px; flex-wrap: wrap; }
+.sets-card {
+  width: 52px; aspect-ratio: 5 / 7;
+  border: 2px solid var(--ink); overflow: hidden;
+  background: var(--cream); position: relative;
+}
+.sets-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sets-card--missing img { filter: grayscale(1) opacity(.35); }
+.sets-card--owned { outline: 2px solid var(--nori); outline-offset: 1px; }
+
 .player-hand {
   grid-column: 2;
-  grid-row: 1 / 4;
+  grid-row: 1 / 5;
   align-self: center;
   display: flex; gap: 8px;
   justify-content: flex-start;
@@ -666,31 +724,58 @@ body {
   height: calc(var(--card-h) * 1.5);
 }
 
-/* ── Hand zoom — first click on a hand card pops a 2× preview ──────────────
-   The hand is a scroll container, so an in-place scale() would be clipped;
-   game.js positions this fixed, click-transparent layer over the card. */
-.hand-zoom {
-  position: fixed;
-  z-index: 95;
+/* ── Fullscreen card viewer — press-and-hold any face-up card ──────────────
+   pointer-events: none so the pointerup that ends the hold reaches the
+   document handler and closes the peek. */
+.card-viewer {
+  position: fixed; inset: 0;
+  z-index: 900;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px;
+  background: rgba(32, 33, 38, .8);
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   pointer-events: none;
-  transform-origin: center bottom;
-  animation: hand-zoom-pop 180ms cubic-bezier(.2, .9, .3, 1.3) both;
+  animation: overlay-in 120ms ease forwards;
 }
-.hand-zoom img {
-  width: 100%; height: 100%;
-  object-fit: cover; display: block;
-  border: 2px solid var(--ink);
-  border-radius: var(--card-r);
+.card-viewer__card {
+  height: min(62vh, 520px);
+  aspect-ratio: 5 / 7;
+  border: 3px solid var(--ink);
+  box-shadow: 10px 10px 0 var(--ink);
+  overflow: hidden;
   background: var(--cream);
 }
-@keyframes hand-zoom-pop {
-  from { transform: scale(.5); opacity: 0; }
-  to   { transform: scale(1);  opacity: 1; }
+.card-viewer__card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-viewer__name {
+  padding: .3rem .7rem;
+  font-family: var(--font-d); font-size: 16px; font-weight: 900;
+  color: var(--ink); background: var(--mustard);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.card-viewer__meta {
+  font-size: 13px; font-weight: 600; color: var(--cream);
+  max-width: 320px; text-align: center; line-height: 1.45;
+}
+
+/* ── Drag-and-drop swap ────────────────────────────────────────────────────── */
+.drag-ghost {
+  position: fixed; margin: 0;
+  z-index: 800; pointer-events: none;
+  transform: rotate(-4deg) scale(1.06);
+  box-shadow: var(--shadow-card-lift);
+  transition: none;
+}
+.card--drag-source { opacity: .35; }
+.card--drop-hover {
+  outline: 3px solid var(--nori) !important;
+  outline-offset: 3px;
+  transform: translateY(-4px);
 }
 
 /* Controls */
 .controls {
-  grid-row: 3;
+  grid-row: 4;
   grid-column: 3;
   display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px;
   background: var(--paper); padding: 38px 22px 16px 8px;
@@ -720,6 +805,18 @@ body {
   width: 100%; height: 100%;
   object-fit: cover; object-position: center;
   display: block;
+}
+
+/* Touch behavior: no double-tap zoom on controls; hand cards let horizontal
+   swipes scroll while vertical movement becomes a card drag. Long-press is
+   ours — suppress the native image callout/drag. */
+.btn, .card, .card-back, .pile-stack, .agent-card { touch-action: manipulation; }
+.player-hand .card { touch-action: pan-x; }
+.card img, .card-back img, .pile-stack img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Action / passive hooks — kept for JS targeting, no visual left border */
@@ -884,10 +981,10 @@ body {
 }
 .thinking-overlay[hidden] { display: none; }
 .thinking-overlay__box {
-  background: var(--paper); border: 1px solid var(--rule);
-  border-radius: 10px; padding: 20px 32px;
+  background: var(--paper); border: 2px solid var(--ink);
+  border-radius: 0; padding: 20px 32px;
   display: flex; flex-direction: column; align-items: center; gap: 12px;
-  box-shadow: var(--shadow-modal);
+  box-shadow: 6px 6px 0 var(--ink);
 }
 .thinking-overlay__text {
   font-family: var(--font-d); font-size: 15px;
@@ -912,17 +1009,18 @@ body {
 }
 .modal-bg[hidden] { display: none; }
 .modal {
-  background: var(--paper); border: 1px solid var(--rule);
-  border-radius: 4px; padding: 24px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0; padding: 20px;
   max-width: 500px; width: 92%;
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   display: flex; flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-modal);
-  border-top: 3px solid var(--salmon);
+  box-shadow: 8px 8px 0 var(--ink);
 }
 .modal__title {
-  font-family: var(--font-d); font-size: 20px; font-weight: 600;
+  font-family: var(--font-d); font-size: 20px; font-weight: 800;
   color: var(--ink); margin-bottom: 6px;
   letter-spacing: -.02em; font-variation-settings: "opsz" 144;
 }
@@ -950,62 +1048,46 @@ body {
   padding: 12px; background: var(--cream-soft);
   border-radius: 6px; border: 1px solid var(--rule);
 }
-.chefs-pos-slider { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.chefs-pos-slider label { font-size: 12px; color: var(--muted); font-weight: 500; }
-.chefs-pos-slider input[type=range] { width: 100%; accent-color: var(--peri-deep); }
-.chefs-pos-display {
-  font-family: var(--font-d); font-size: 15px; color: var(--peri-deep);
-  font-variant-numeric: tabular-nums;
-}
-.chefs-pos-hint { font-size: 10px; color: var(--muted); font-style: italic; }
+.chefs-pos-slider { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.chefs-pos-label { font-size: 12px; color: var(--ink); font-weight: 700; }
 
-/* Action choice overlay (click action card -> choose Play / Exchange|Skip) */
-.action-choice-overlay {
-  position: fixed; inset: 0;
-  background: rgba(27,30,46,.56);
-  display: flex; align-items: center; justify-content: center;
+/* Segmented Top/Bottom toggle */
+.seg { display: flex; border: 2px solid var(--ink); width: fit-content; }
+.seg__btn {
+  font-family: var(--font-b); font-size: 12px; font-weight: 700;
+  background: #fff; color: var(--body);
+  border: 0; padding: 7px 14px; cursor: pointer;
+  transition: background var(--t-hover);
+}
+.seg__btn + .seg__btn { border-left: 2px solid var(--ink); }
+.seg__btn--active { background: var(--mustard); color: var(--ink); }
+
+/* Card popover — anchored Play / Swap choice next to the tapped action card */
+.card-popover {
+  position: fixed;
   z-index: 520;
-  animation: overlay-in 180ms ease forwards;
-}
-.action-choice-overlay--out { animation: overlay-out 220ms ease forwards; }
-.action-choice-panel {
-  width: min(92vw, 380px);
-  max-height: calc(100vh - 20px);
+  width: max-content;
+  max-width: min(78vw, 260px);
   background: var(--paper);
-  border: 1px solid var(--rule);
-  border-top: 3px solid var(--mustard);
-  border-radius: 8px;
-  box-shadow: var(--shadow-modal);
-  padding: 14px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 2px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  animation: popover-in 140ms cubic-bezier(.2, .9, .3, 1.2) both;
 }
-.action-choice-title {
-  font-family: var(--font-d); font-size: 18px; font-weight: 600;
-  color: var(--ink); letter-spacing: -.02em; text-align: center;
+.card-popover--out { animation: overlay-out 140ms ease forwards; }
+.card-popover__title {
+  font-family: var(--font-d); font-size: 14px; font-weight: 800;
+  color: var(--ink);
 }
-.action-choice-desc {
-  font-size: 12px; color: var(--muted); text-align: center;
-  line-height: 1.4;
+.card-popover__desc {
+  font-size: 11px; color: var(--muted); line-height: 1.4;
 }
-.action-choice-card {
-  width: min(52vw, 188px);
-  aspect-ratio: 5 / 7;
-  border-radius: var(--card-r);
-  overflow: hidden;
-  border: 1px solid var(--rule);
-  box-shadow: var(--shadow-card-lift);
-  flex-shrink: 0;
-}
-.action-choice-card img {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-}
-.action-choice-actions {
-  width: 100%;
-  display: flex; gap: 8px;
-}
-.action-choice-actions .btn {
-  flex: 1;
-  justify-content: center;
+.card-popover__actions { display: flex; gap: 6px; }
+.card-popover__actions .btn { flex: 1; justify-content: center; }
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(6px) scale(.96); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* Drawer */
@@ -1014,10 +1096,10 @@ body {
 .drawer {
   position: absolute; top: 0; right: 0; bottom: 0;
   width: min(300px, 92vw);
-  background: rgba(251,247,236,0.88);
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border-left: 1px solid var(--rule);
+  background: var(--paper);
+  border-left: 2px solid var(--ink);
   display: flex; flex-direction: column; padding: 14px 16px; gap: 0;
+  padding-right: max(16px, env(safe-area-inset-right));
   overflow: hidden;
 }
 .drawer__header {
@@ -1110,13 +1192,14 @@ body {
   z-index: var(--z-toast); pointer-events: none;
 }
 .toast {
-  background: var(--ink); border-radius: 4px;
-  padding: 8px 16px; font-size: 13px; color: var(--cream);
-  box-shadow: 0 4px 16px rgba(27,30,46,.28);
+  background: var(--mustard); border: 2px solid var(--ink); border-radius: 0;
+  padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
   animation: toast-in .24s ease both;
   font-family: var(--font-b); letter-spacing: .01em;
 }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* ══ Game ending banner ══════════════════════════════════════════════════ */
 .game-ending-banner {
@@ -1248,8 +1331,10 @@ body {
   /* Topbar → floating burger only, taken out of grid */
   .topbar {
     position: fixed;
-    top: 8px; right: 10px;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
     background: transparent; border: none; padding: 0;
+    min-height: 0;
     z-index: var(--z-overlay);
   }
   .topbar__logo   { display: none; }
@@ -1284,8 +1369,15 @@ body {
     aspect-ratio: 5 / 7;
   }
 
-  /* Phase bar: removed */
-  .phase-bar { display: none; }
+  /* Phase bar → slim status strip (message only, pips hidden) */
+  .phase-bar {
+    order: -2;
+    flex-direction: row; justify-content: center;
+    padding: 3px 44px 0 8px;
+    gap: 0;
+  }
+  .phase-pips { display: none; }
+  .phase-msg { font-size: 11px; text-align: center; max-width: none; }
 
   /* Row 2: Belt — fills its entire row, no dead space */
   .belt-section {
@@ -1356,7 +1448,15 @@ body {
     overflow: visible;
   }
   .player-zone__header { display: none; }
-  .passive-effects     { display: none; }
+  .set-progress        { display: none; }
+  .passive-effects {
+    order: -1;
+    display: flex; justify-content: center;
+    margin: 2px 0 0; gap: 4px;
+  }
+  .passive-effects:empty { display: none; }
+  .effect-badge { font-size: 8px; padding: 2px 6px; box-shadow: 2px 2px 0 var(--ink); }
+  #btn-sets { display: inline-flex; }
   .player-hand {
     flex: 1;
     align-items: center;
@@ -1384,7 +1484,7 @@ body {
     height: auto;
     width: auto;
     min-width: 0;
-    padding: 0.55rem;
+    padding: 0.55rem 0.55rem calc(0.55rem + env(safe-area-inset-bottom));
     gap: 0.45rem;
     border-top: 0;
     border-left: 0;
@@ -1404,7 +1504,19 @@ body {
   .controls .score-box__value { font-size: 18px; }
   .controls .btn { min-height: 2.4rem; padding: 0.45rem 0.55rem; font-size: 11px; }
 
-  #toast-container { bottom: 8px; }
+  #toast-container { bottom: calc(8px + env(safe-area-inset-bottom)); }
+
+  /* Modals become bottom sheets in portrait */
+  .modal-bg { align-items: flex-end; }
+  .modal {
+    width: 100%; max-width: none;
+    border-left: 0; border-right: 0; border-bottom: 0;
+    box-shadow: none;
+    padding: 16px 14px calc(14px + env(safe-area-inset-bottom));
+    max-height: 82vh;
+    max-height: 82dvh;
+    animation: sheet-up 240ms cubic-bezier(.2, .8, .3, 1) both;
+  }
 
   /* Landing page */
   .agent-grid, .agent-grid--3 { grid-template-columns: repeat(3, 1fr); }
@@ -1476,7 +1588,7 @@ body {
     grid-template-columns: 1fr auto;
   }
 
-  .topbar { position: fixed; top: 4px; right: 8px; background: transparent; border: none; padding: 0; z-index: var(--z-overlay); }
+  .topbar { position: fixed; top: max(4px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); background: transparent; border: none; padding: 0; min-height: 0; z-index: var(--z-overlay); }
   .topbar__logo   { display: none; }
   .topbar__center { display: none; }
   #btn-menu {
@@ -1492,9 +1604,19 @@ body {
   .opp-zone__info { display: none; }
   #opp-hand .card-back { width: var(--card-w); height: var(--card-h); }
 
-  .phase-bar { display: none; }
+  /* Phase bar → slim status strip (message only) */
+  .phase-bar {
+    order: -2;
+    flex-direction: row; justify-content: center;
+    padding: 2px 40px 0 8px;
+  }
+  .phase-pips { display: none; }
+  .phase-msg { font-size: 10px; text-align: center; max-width: none; }
 
-  .belt-section { grid-row: 2; grid-column: 1 / -1; padding: 8px; gap: 6px; align-items: center; }
+  /* Flex row: deck | belt | trash — the desktop grid's 1fr side columns
+     collapse to zero at this width and would clip the piles */
+  .belt-section { grid-row: 2; grid-column: 1 / -1; display: flex; padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); gap: 8px; align-items: center; }
+  .pile-zone    { flex: 0 0 auto; }
   .belt-center  { flex: 1; min-width: 0; overflow: hidden; }
   .belt-track   { padding: 5px 8px; }
   .belt-rail    { margin: 0; }
@@ -1503,9 +1625,22 @@ body {
   .belt-section .card { width: 100%; height: 100%; aspect-ratio: auto; }
   .belt-labels  { display: none; }
 
-  .player-zone { grid-row: 3; grid-column: 1; padding: 4px 0; border-top: 1px solid var(--rule); overflow: hidden; min-width: 0; }
+  .player-zone {
+    grid-row: 3; grid-column: 1;
+    display: flex; flex-direction: column;
+    padding: 4px 0; border-top: 1px solid var(--rule);
+    overflow: hidden; min-width: 0;
+  }
   .player-zone__header { display: none; }
-  .passive-effects     { display: none; }
+  .set-progress        { display: none; }
+  .passive-effects {
+    order: -1;
+    display: flex; justify-content: center;
+    margin: 0; gap: 4px;
+  }
+  .passive-effects:empty { display: none; }
+  .effect-badge { font-size: 8px; padding: 2px 5px; box-shadow: 2px 2px 0 var(--ink); }
+  #btn-sets { display: inline-flex; }
   .player-hand {
     width: 100%;
     max-width: 100vw;
@@ -1519,7 +1654,7 @@ body {
   }
   .player-hand .card   { width: calc(var(--card-w) * 2); height: calc(var(--card-h) * 2); }
 
-  .controls { grid-row: 3; grid-column: 2; flex-direction: column; height: auto; padding: 4px 8px; gap: 4px; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); justify-content: center; align-items: stretch; }
+  .controls { grid-row: 3; grid-column: 2; flex-direction: column; height: auto; padding: 4px max(8px, env(safe-area-inset-right)) 4px 8px; gap: 4px; border-top: 1px solid var(--rule); border-left: 1px solid var(--rule); justify-content: center; align-items: stretch; }
   .controls .score-box { flex-direction: column; align-items: center; gap: 0; padding-bottom: 4px; border-bottom: 1px solid var(--rule); }
   .controls .score-box__label { font-size: 8px; }
   .controls .score-box__value { font-size: 14px; }

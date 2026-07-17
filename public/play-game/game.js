@@ -1,6 +1,6 @@
 import { OmakaseEnv, MAX_BELT_SIZE } from './engine/env.js';
 import { Phase } from './engine/gameState.js';
-import { calculateScore, scoreBreakdown } from './engine/scoring.js';
+import { calculateScore, scoreBreakdown, OMAKASE_SET, SAKURA_SET, UME_SET, KIDS_SET } from './engine/scoring.js';
 import { CARD_VALUES, CARD_DISPLAY_NAMES, PASSIVE_ACTION_CARDS } from './engine/cards.js';
 import { SimpleGreedyAgent, RandomAgent } from './agents/greedy.js';
 
@@ -18,10 +18,10 @@ const ACTION_EFFECTS = {
   umeshu:       'Shuffle both hands and redistribute',
   chefs_choice: 'Draw 3, then return 2 to the deck',
   matcha:       'Draw an extra card, increase hand limit',
-  fork:         'Remove a card from opponent\'s hand',
-  wasabi:       'Skip your opponent\'s next turn (passive)',
-  shoyu:        'Double value of 2 standalone cards (passive)',
-  ginger:       "Block opponent's next swap (passive)",
+  fork:         'Opponent discards their most expensive sushi',
+  wasabi:       'Whoever draws this skips their next turn (passive)',
+  shoyu:        'Doubles one standalone sushi at scoring (passive)',
+  ginger:       'No ability — cannot be swapped away (passive)',
 };
 
 // ── Game state ────────────────────────────────────────────────────────────────
@@ -58,14 +58,23 @@ let phase3Selection = null; // { card } | null
 let beltDealIn = null;      // card object that just entered belt[0]
 let beltDealAnimating = false; // true while fly-in animation is running
 
+// One-shot "deck is running low" warning
+let deckLowWarned = false;
+
+const SETS_DEF = [
+  { name: 'Omakase', value: 6000, cards: [...OMAKASE_SET] },
+  { name: 'Sakura',  value: 4500, cards: [...SAKURA_SET] },
+  { name: 'Ume',     value: 3500, cards: [...UME_SET] },
+  { name: 'Kids',    value: 2000, cards: [...KIDS_SET] },
+];
+
 // ── DOM helpers ───────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('screen--active'));
   $(id).classList.add('screen--active');
-  beltPreviewIdx = null;
-  hideHandZoom();
+  hideCardViewer();
 }
 
 // ── Card rendering ────────────────────────────────────────────────────────────
@@ -80,12 +89,14 @@ function makeCardEl(card, opts = {}) {
 
   const name = cardName(card);
   const displayName = CARD_DISPLAY_NAMES[name] ?? name;
+  el.dataset.cardName = name;
 
   const img = document.createElement('img');
   img.src = cardImg(name);
   img.alt = displayName;
   img.className = 'card__img';
   img.loading = 'lazy';
+  img.draggable = false;
   img.onerror = () => { img.style.visibility = 'hidden'; };
   el.appendChild(img);
 
@@ -109,6 +120,7 @@ function makeCardBackEl(large = false) {
   const img = document.createElement('img');
   img.src = BACK_IMG;
   img.alt = '';
+  img.draggable = false;
   if (large) img.className = 'card__img';
   el.appendChild(img);
   return el;
@@ -151,6 +163,13 @@ function render() {
 
   $('turn-number').textContent = env.turnCount + 1;
   $('deck-count').textContent  = state.deck.length;
+  $('deck-count').classList.toggle('pile-count--low', state.deck.length <= 5);
+
+  // One-shot warning as the deck runs dry (the game ends when it empties)
+  if (state.deck.length <= 5 && state.deck.length > 0 && !state.gameOver && !deckLowWarned) {
+    deckLowWarned = true;
+    toast(`Only ${state.deck.length} cards left — the game ends when the deck runs out`, 3500);
+  }
 
   // Update deck pile appearance
   const deckImg = $('deck-pile-img');
@@ -189,6 +208,86 @@ function render() {
   renderPhaseBar(phase, isPlayerTurn, state);
   renderControls(isPlayerTurn, phase);
   renderPassiveEffects(player);
+  renderSetProgress(player);
+}
+
+// ── Menu set progress ─────────────────────────────────────────────────────────
+function renderSetProgress(player) {
+  const el = $('set-progress');
+  if (!el) return;
+  const owned = new Set(player.hand.filter(c => c.isSushi).map(c => c.sushiCard));
+
+  el.innerHTML = '';
+  const title = document.createElement('p');
+  title.className = 'set-progress__title';
+  title.textContent = 'Menu Sets';
+  el.appendChild(title);
+
+  SETS_DEF.forEach(def => {
+    const have = def.cards.filter(c => owned.has(c)).length;
+    const done = have === def.cards.length;
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'set-row' + (done ? ' set-row--done' : '');
+    row.setAttribute('aria-label', `${def.name} set: ${have} of ${def.cards.length} cards`);
+
+    const nameEl = document.createElement('span');
+    nameEl.textContent = `${def.name} ¥${def.value.toLocaleString()}`;
+    const count = document.createElement('span');
+    count.className = 'set-row__count';
+    count.textContent = done ? '✓' : `${have}/${def.cards.length}`;
+
+    row.append(nameEl, count);
+    row.addEventListener('click', showSetsModal);
+    el.appendChild(row);
+  });
+}
+
+function showSetsModal() {
+  if (!env?.state) return;
+  const player = env.state.players[PLAYER_IDX];
+  const owned = new Set(player.hand.filter(c => c.isSushi).map(c => c.sushiCard));
+
+  const body = $('sets-modal-body');
+  body.innerHTML = '';
+
+  SETS_DEF.forEach(def => {
+    const have = def.cards.filter(c => owned.has(c)).length;
+    const done = have === def.cards.length;
+
+    const wrap = document.createElement('div');
+
+    const header = document.createElement('div');
+    header.className = 'sets-modal-set__header';
+    const nameEl = document.createElement('strong');
+    nameEl.textContent = `${def.name} Set`;
+    const count = document.createElement('span');
+    count.className = 'sets-modal-set__count';
+    count.textContent = done ? 'Complete!' : `${have}/${def.cards.length}`;
+    const value = document.createElement('span');
+    value.className = 'sets-modal-set__value';
+    value.textContent = `¥${def.value.toLocaleString()}`;
+    header.append(nameEl, count, value);
+
+    const strip = document.createElement('div');
+    strip.className = 'sets-cards';
+    def.cards.forEach(name => {
+      const cardW = document.createElement('div');
+      cardW.className = 'sets-card ' + (owned.has(name) ? 'sets-card--owned' : 'sets-card--missing');
+      cardW.title = CARD_DISPLAY_NAMES[name] ?? name;
+      const img = document.createElement('img');
+      img.src = cardImg(name);
+      img.alt = CARD_DISPLAY_NAMES[name] ?? name;
+      img.draggable = false;
+      cardW.appendChild(img);
+      strip.appendChild(cardW);
+    });
+
+    wrap.append(header, strip);
+    body.appendChild(wrap);
+  });
+
+  $('sets-modal-bg').hidden = false;
 }
 
 function renderTrashPile(state) {
@@ -217,9 +316,6 @@ function renderTrashPile(state) {
 function renderBelt(state, isPlayerTurn, phase) {
   const beltEl = $('belt-slots');
   beltEl.innerHTML = '';
-  if (beltPreviewIdx != null && beltPreviewIdx >= state.conveyorBelt.length) {
-    beltPreviewIdx = null;
-  }
 
   const showTargets = isPlayerTurn && (
     (phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT') ||
@@ -245,26 +341,12 @@ function renderBelt(state, isPlayerTurn, phase) {
     }
 
     if (isTarget) {
-      // First click pops the 1.5× preview, second click confirms the swap
+      // Tap confirms the swap (long-press previews the card)
       cardEl.style.cursor = 'pointer';
       cardEl.addEventListener('click', e => {
         e.stopPropagation();
-        if (beltPreviewIdx === bIdx) {
-          beltPreviewIdx = null;
-          if (swapIntent) onBeltCardClickWithSwapIntent(bIdx);
-          else onBeltCardClick(bIdx);
-        } else {
-          beltPreviewIdx = bIdx;
-          render();
-        }
-      });
-    } else {
-      // Idle belt card: tap to peek at it, tap again to dismiss
-      cardEl.style.cursor = 'zoom-in';
-      cardEl.addEventListener('click', e => {
-        e.stopPropagation();
-        beltPreviewIdx = beltPreviewIdx === bIdx ? null : bIdx;
-        render();
+        if (swapIntent) onBeltCardClickWithSwapIntent(bIdx);
+        else onBeltCardClick(bIdx);
       });
     }
 
@@ -300,81 +382,249 @@ function renderPassiveEffects(player) {
 
 let lastHandSelIdx = -1;
 
-// ── Card zoom: first click on a hand or belt card shows a 1.5× fixed-position
-// preview. pointer-events: none in CSS keeps every underlying interaction
-// working (the second click passes through the zoom to the card below).
-const HAND_ZOOM_SCALE = 1.5;
-let handZoomEl = null;
-let beltPreviewIdx = null; // belt card currently popped up | null
+// ── Fullscreen card viewer — press-and-hold any face-up card to inspect it.
+// Opens after a 450ms hold, stays while the pointer is down (peek), and a
+// quick release before the timer keeps normal tap behavior untouched.
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_SLOP = 8;
+let cardViewerEl = null;
+let lpTimer = null;
+let lpStart = null;         // { x, y }
+let suppressNextClick = false;
 
-function positionHandZoom(cardEl) {
-  if (!handZoomEl) return;
-  const r = cardEl.getBoundingClientRect();
-  const w = r.width * HAND_ZOOM_SCALE;
-  const h = r.height * HAND_ZOOM_SCALE;
-  let left = r.left + r.width / 2 - w / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
-  // Grow upward from the card's bottom edge, clamped to the viewport
-  const top = Math.max(8, r.bottom - h);
-  handZoomEl.style.width = w + 'px';
-  handZoomEl.style.height = h + 'px';
-  handZoomEl.style.left = left + 'px';
-  handZoomEl.style.top = top + 'px';
+function cardInfoText(name) {
+  if (name in CARD_VALUES) return `¥${CARD_VALUES[name].toLocaleString()} · Sushi`;
+  if (name in ACTION_EFFECTS) return ACTION_EFFECTS[name];
+  return '';
 }
 
-function showHandZoom(cardEl) {
-  const img = cardEl.querySelector('.card__img');
-  if (!img) { hideHandZoom(); return; }
-  if (!handZoomEl) {
-    handZoomEl = document.createElement('div');
-    handZoomEl.className = 'hand-zoom';
-    handZoomEl.appendChild(document.createElement('img'));
-    document.body.appendChild(handZoomEl);
+function showCardViewer(name) {
+  hideCardViewer();
+  const ov = document.createElement('div');
+  ov.className = 'card-viewer';
+
+  const cardWrap = document.createElement('div');
+  cardWrap.className = 'card-viewer__card';
+  const img = document.createElement('img');
+  img.src = cardImg(name);
+  img.alt = CARD_DISPLAY_NAMES[name] ?? name;
+  img.draggable = false;
+  img.onerror = () => { img.style.visibility = 'hidden'; };
+  cardWrap.appendChild(img);
+
+  const title = document.createElement('div');
+  title.className = 'card-viewer__name';
+  title.textContent = CARD_DISPLAY_NAMES[name] ?? name;
+
+  const meta = document.createElement('div');
+  meta.className = 'card-viewer__meta';
+  meta.textContent = cardInfoText(name);
+
+  ov.append(cardWrap, title, meta);
+  document.body.appendChild(ov);
+  cardViewerEl = ov;
+}
+
+function hideCardViewer() {
+  if (cardViewerEl) { cardViewerEl.remove(); cardViewerEl = null; }
+}
+
+// ── Drag-and-drop swap — drag a hand card up onto a highlighted belt card.
+// CSS `touch-action: pan-x` on hand cards keeps horizontal swipes scrolling
+// the hand while vertical movement reaches us as pointermove events.
+let dragCandidate = null; // { hIdx, card, legal, startX, startY, el } | null
+let dragGhost = null;
+let dragActive = false;
+let dragHoverEl = null;
+
+// Same legality rules as the engine's PHASE_2 getLegalActions
+function legalBeltIdxsFor(handCard) {
+  const set = new Set();
+  if (!env?.state) return set;
+  if (!handCard.isSushi && handCard.actionCard === 'ginger') return set;
+  env.state.conveyorBelt.forEach((b, i) => {
+    if (b.cardId === handCard.cardId) return;
+    if (handCard.isSushi && b.isSushi && handCard.sushiCard === b.sushiCard) return;
+    if (!handCard.isSushi && !b.isSushi && handCard.actionCard === b.actionCard) return;
+    set.add(i);
+  });
+  return set;
+}
+
+function canDragNow() {
+  if (!env || env.state.gameOver || aiThinking || actionChoice) return false;
+  const { state } = env;
+  if (state.currentPlayer !== PLAYER_IDX) return false;
+  return state.phase === Phase.PHASE_1 || state.phase === Phase.PHASE_2;
+}
+
+function startDrag(e) {
+  const { el, legal } = dragCandidate;
+  dragActive = true;
+  clearTimeout(lpTimer); lpTimer = null;
+
+  const r = el.getBoundingClientRect();
+  dragGhost = el.cloneNode(true);
+  dragGhost.className = 'card drag-ghost';
+  Object.assign(dragGhost.style, {
+    width: r.width + 'px', height: r.height + 'px',
+    left: (e.clientX - r.width / 2) + 'px',
+    top: (e.clientY - r.height * 0.75) + 'px',
+  });
+  document.body.appendChild(dragGhost);
+  el.classList.add('card--drag-source');
+
+  document.querySelectorAll('#belt-slots .card').forEach((c, i) => {
+    if (legal.has(i)) c.classList.add('card--valid-target');
+  });
+}
+
+function moveDrag(e) {
+  if (!dragGhost) return;
+  const r = dragGhost.getBoundingClientRect();
+  dragGhost.style.left = (e.clientX - r.width / 2) + 'px';
+  dragGhost.style.top = (e.clientY - r.height * 0.75) + 'px';
+
+  const over = beltTargetAt(e.clientX, e.clientY);
+  if (over !== dragHoverEl) {
+    dragHoverEl?.classList.remove('card--drop-hover');
+    dragHoverEl = over;
+    dragHoverEl?.classList.add('card--drop-hover');
   }
-  const zoomImg = handZoomEl.querySelector('img');
-  if (zoomImg.src !== img.src) zoomImg.src = img.src;
-  positionHandZoom(cardEl);
 }
 
-function hideHandZoom() {
-  if (handZoomEl) { handZoomEl.remove(); handZoomEl = null; }
+function beltTargetAt(x, y, cand = dragCandidate) {
+  if (!cand) return null;
+  const beltCards = [...document.querySelectorAll('#belt-slots .card')];
+  const hit = document.elementFromPoint(x, y)?.closest('#belt-slots .card');
+  if (!hit) return null;
+  return cand.legal.has(beltCards.indexOf(hit)) ? hit : null;
 }
 
-// Belt preview wins over hand selection (it is the most recent click)
-function currentZoomTarget(handSelEl) {
-  if (beltPreviewIdx != null) {
-    const beltCard = document.querySelectorAll('#belt-slots .card')[beltPreviewIdx];
-    if (beltCard) return beltCard;
+function endDrag(e, cancelled = false) {
+  const cand = dragCandidate;
+  dragCandidate = null;
+  if (!dragActive) return;
+  dragActive = false;
+  suppressNextClick = true;
+
+  const beltCards = [...document.querySelectorAll('#belt-slots .card')];
+  const target = cancelled ? null : beltTargetAt(e.clientX, e.clientY, cand);
+  const bIdx = target ? beltCards.indexOf(target) : -1;
+
+  dragGhost?.remove(); dragGhost = null;
+  dragHoverEl?.classList.remove('card--drop-hover'); dragHoverEl = null;
+  cand.el.classList.remove('card--drag-source');
+  beltCards.forEach(c => c.classList.remove('card--valid-target'));
+
+  if (bIdx < 0 || !canDragNow()) { render(); return; }
+  executeDragSwap(cand.hIdx, bIdx);
+}
+
+function executeDragSwap(hIdx, bIdx) {
+  const { state } = env;
+  swapIntent = null;
+  if (actionChoiceOverlayEl) closeActionChoiceOverlay('cancel', true);
+
+  if (state.phase === Phase.PHASE_1) {
+    env.step(0); // skip the pre-swap action phase
+    if (env.state.gameOver) { endGame(); return; }
   }
-  return handSelEl ?? document.querySelector('#player-hand .card--selected');
+  if (env.state.phase !== Phase.PHASE_2) { render(); return; }
+
+  p2 = { step: 'SELECT_HAND', handIdx: null, legalBeltIdxs: new Set() };
+  env.step(hIdx * MAX_BELT_SIZE + bIdx);
+  if (env.state.gameOver) { endGame(); return; }
+  if (env.state.phase === Phase.PHASE_DISCARD && env.state.currentPlayer === PLAYER_IDX) {
+    render(); showDiscardModal(); return;
+  }
+  render();
+  postRenderCheck();
+  scheduleTurn();
 }
 
-function updateCardZoom(handSelEl) {
-  const target = currentZoomTarget(handSelEl);
-  if (target) showHandZoom(target); else hideHandZoom();
-}
+// ── Global pointer handlers: long-press (any face-up card) + drag (hand) ─────
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const cardEl = e.target.closest('.card[data-card-name]');
+  if (!cardEl) return;
 
-function repositionHandZoom() {
-  if (!handZoomEl) return;
-  const target = currentZoomTarget();
-  if (target) positionHandZoom(target);
-}
-$('player-hand').addEventListener('scroll', repositionHandZoom);
-$('belt-slots').addEventListener('scroll', repositionHandZoom);
-window.addEventListener('resize', repositionHandZoom);
+  lpStart = { x: e.clientX, y: e.clientY };
+  lpTimer = setTimeout(() => {
+    lpTimer = null;
+    if (dragActive) return;
+    dragCandidate = null;
+    suppressNextClick = true;
+    showCardViewer(cardEl.dataset.cardName);
+  }, LONG_PRESS_MS);
 
-// Clicking anywhere outside the hand, belt, or controls deselects the
-// popped-up card (swapIntent has its own click-away handler already).
+  // Hand cards are also drag candidates
+  const handEl = $('player-hand');
+  if (handEl.contains(cardEl) && canDragNow() && !cardEl.classList.contains('card--disabled')) {
+    const hIdx = [...handEl.children].indexOf(cardEl);
+    const card = env.state.players[PLAYER_IDX].hand[hIdx];
+    if (card) {
+      const legal = legalBeltIdxsFor(card);
+      if (legal.size > 0) {
+        dragCandidate = { hIdx, card, legal, startX: e.clientX, startY: e.clientY, el: cardEl };
+      }
+    }
+  }
+}, true);
+
+document.addEventListener('pointermove', e => {
+  if (dragActive) { moveDrag(e); return; }
+
+  const moved = lpStart ? Math.hypot(e.clientX - lpStart.x, e.clientY - lpStart.y) : 0;
+  if (lpTimer && moved > LONG_PRESS_SLOP) { clearTimeout(lpTimer); lpTimer = null; }
+
+  if (dragCandidate && !dragActive) {
+    const dx = e.clientX - dragCandidate.startX;
+    const dy = e.clientY - dragCandidate.startY;
+    // Vertical intent starts a drag; horizontal is the hand scrolling
+    if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) startDrag(e);
+    else if (Math.abs(dx) > 16) dragCandidate = null;
+  }
+}, true);
+
+document.addEventListener('pointerup', e => {
+  if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+  lpStart = null;
+  if (cardViewerEl) hideCardViewer();
+  if (dragActive) endDrag(e);
+  else dragCandidate = null;
+}, true);
+
+document.addEventListener('pointercancel', e => {
+  if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+  lpStart = null;
+  hideCardViewer();
+  if (dragActive) endDrag(e, true);
+  else dragCandidate = null;
+}, true);
+
+// Swallow the click that follows a long-press or a drag
+document.addEventListener('click', e => {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}, true);
+
+// No native context menu / image callout on cards (long-press is ours)
+document.addEventListener('contextmenu', e => {
+  if (e.target.closest('.card, .card-back')) e.preventDefault();
+});
+
+// Clicking anywhere outside the hand, belt, or controls deselects
+// (swapIntent has its own click-away handler already).
 // Capture phase: card handlers re-render the hand, which detaches the
 // clicked element and would break the closest() containment check.
 document.addEventListener('click', e => {
   if (!env || env.state.gameOver) return;
-  if (e.target.closest('#player-hand')) {
-    // Hand clicks close any belt preview; the hand handlers re-render
-    beltPreviewIdx = null;
-    return;
-  }
-  if (e.target.closest('#belt-slots, .controls, .modal-bg, .action-choice-overlay, .drawer, .drawer-bg, .topbar')) return;
+  if (e.target.closest('#player-hand')) return;
+  if (e.target.closest('#belt-slots, .controls, .modal-bg, .card-popover, .drawer, .drawer-bg, .topbar')) return;
   let changed = false;
   if (env.state.phase === Phase.PHASE_2 && p2.step === 'SELECT_BELT') {
     p2 = { step: 'SELECT_HAND', handIdx: null, legalBeltIdxs: new Set() };
@@ -382,10 +632,6 @@ document.addEventListener('click', e => {
   }
   if (phase3Selection) {
     phase3Selection = null;
-    changed = true;
-  }
-  if (beltPreviewIdx != null) {
-    beltPreviewIdx = null;
     changed = true;
   }
   if (changed) render();
@@ -509,7 +755,6 @@ function renderPlayerHand(player, state, isPlayerTurn, phase) {
     selEl.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
   }
   lastHandSelIdx = selIdx;
-  updateCardZoom(selEl);
 }
 
 const PHASE_MSGS = [
@@ -562,7 +807,11 @@ function renderPhaseBar(phase, isPlayerTurn, state) {
     msg = isPlayerTurn ? 'Discard a card — hand is over limit' : 'Opponent discarding…';
     highlight = isPlayerTurn;
   } else if (isPlayerTurn) {
-    msg = PHASE_MSGS[phase] ?? 'Waiting…';
+    if (phase === Phase.PHASE_4 && !(env?.getLegalActions().includes(1))) {
+      msg = 'No complete menu set yet — end your turn';
+    } else {
+      msg = PHASE_MSGS[phase] ?? 'Waiting…';
+    }
     highlight = phase === Phase.PHASE_2;
   } else {
     msg = 'Opponent is thinking…';
@@ -580,6 +829,9 @@ function renderControls(isPlayerTurn, phase) {
   passBtn.disabled  = !canPass || !!actionChoice || !!swapIntent;
   checkBtn.disabled = !canCheck || !!actionChoice || !!swapIntent;
   checkBtn.classList.toggle('btn--check-avail', canCheck);
+  checkBtn.title = canCheck
+    ? 'Call Check — everyone else gets one last turn'
+    : 'Complete a menu set to call Check';
 
   // Dynamic label
   if (canPass) {
@@ -587,6 +839,7 @@ function renderControls(isPlayerTurn, phase) {
   }
 }
 
+// Anchored popover next to the tapped action card: Play / Swap (or Skip)
 function showActionChoiceOverlay(card, phase) {
   if (actionChoiceOverlayEl) closeActionChoiceOverlay('cancel', true);
 
@@ -594,62 +847,74 @@ function showActionChoiceOverlay(card, phase) {
   render();
 
   return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.className = 'action-choice-overlay';
-
-    const panel = document.createElement('div');
-    panel.className = 'action-choice-panel';
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
-
-    const title = document.createElement('h3');
-    title.className = 'action-choice-title';
+    const anchor = document.querySelector('#player-hand .card--selected');
     const name = cardName(card);
+
+    const pop = document.createElement('div');
+    pop.className = 'card-popover';
+    pop.setAttribute('role', 'dialog');
+
+    const title = document.createElement('div');
+    title.className = 'card-popover__title';
     title.textContent = CARD_DISPLAY_NAMES[name] ?? name;
 
-    const desc = document.createElement('p');
-    desc.className = 'action-choice-desc';
-    const secondaryLabel = phase === Phase.PHASE_1 ? 'Swap' : 'Skip';
-    desc.textContent = phase === Phase.PHASE_1
-      ? `Play this action now, or mark it for swap.`
-      : `Play this action now, or skip this action phase.`;
-
-    const cardWrap = document.createElement('div');
-    cardWrap.className = 'action-choice-card';
-    const img = document.createElement('img');
-    img.src = cardImg(name);
-    img.alt = CARD_DISPLAY_NAMES[name] ?? name;
-    img.onerror = () => { img.style.visibility = 'hidden'; };
-    cardWrap.appendChild(img);
+    const desc = document.createElement('div');
+    desc.className = 'card-popover__desc';
+    desc.textContent = ACTION_EFFECTS[name] ?? '';
 
     const actions = document.createElement('div');
-    actions.className = 'action-choice-actions';
+    actions.className = 'card-popover__actions';
     const playBtn = document.createElement('button');
-    playBtn.className = 'btn btn--salmon';
+    playBtn.className = 'btn btn--salmon btn--sm';
     playBtn.textContent = 'Play';
     const secondaryBtn = document.createElement('button');
-    secondaryBtn.className = 'btn btn--secondary';
-    secondaryBtn.textContent = secondaryLabel;
+    secondaryBtn.className = 'btn btn--secondary btn--sm';
+    secondaryBtn.textContent = phase === Phase.PHASE_1 ? 'Swap' : 'Skip';
     actions.append(playBtn, secondaryBtn);
 
-    panel.append(title, desc, cardWrap, actions);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
+    pop.append(title, desc, actions);
+    document.body.appendChild(pop);
+
+    // Position above the card, clamped to the viewport
+    const place = () => {
+      const a = anchor?.getBoundingClientRect();
+      const p = pop.getBoundingClientRect();
+      if (!a) {
+        pop.style.left = (window.innerWidth - p.width) / 2 + 'px';
+        pop.style.top = (window.innerHeight - p.height) / 2 + 'px';
+        return;
+      }
+      let left = a.left + a.width / 2 - p.width / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - p.width - 8));
+      let top = a.top - p.height - 10;
+      if (top < 8) top = Math.min(a.bottom + 10, window.innerHeight - p.height - 8);
+      pop.style.left = left + 'px';
+      pop.style.top = top + 'px';
+    };
+    place();
 
     const onKeydown = e => {
       if (e.key === 'Escape') closeActionChoiceOverlay('cancel');
     };
+    const onDocClick = e => {
+      if (!pop.contains(e.target)) closeActionChoiceOverlay('cancel');
+    };
+    const onScrollAway = () => closeActionChoiceOverlay('cancel');
 
     playBtn.addEventListener('click', () => closeActionChoiceOverlay('play'));
     secondaryBtn.addEventListener('click', () => closeActionChoiceOverlay(phase === Phase.PHASE_1 ? 'exchange' : 'skip'));
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) closeActionChoiceOverlay('cancel');
-    });
     document.addEventListener('keydown', onKeydown);
+    window.addEventListener('resize', place);
+    $('player-hand').addEventListener('scroll', onScrollAway);
+    // Register click-away on the next tick so the opening tap doesn't cancel
+    setTimeout(() => document.addEventListener('click', onDocClick), 0);
 
-    actionChoiceOverlayEl = overlay;
+    actionChoiceOverlayEl = pop;
     actionChoiceResolver = result => {
       document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('click', onDocClick);
+      window.removeEventListener('resize', place);
+      $('player-hand').removeEventListener('scroll', onScrollAway);
       resolve(result);
     };
   });
@@ -678,8 +943,8 @@ function closeActionChoiceOverlay(result = 'cancel', immediate = false) {
     return;
   }
 
-  overlay.classList.add('action-choice-overlay--out');
-  setTimeout(finish, 220);
+  overlay.classList.add('card-popover--out');
+  setTimeout(finish, 140);
 }
 
 // ── Phase 2 handlers ──────────────────────────────────────────────────────────
@@ -786,47 +1051,63 @@ async function onActionCardPlayDirect(card, player) {
   const action = idx + 1;
   if (!env.getLegalActions().includes(action)) return;
 
-  const name = cardName(card);
-  await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name);
+  await resolveAndPlayActionCard(card, action);
+}
 
+// Shared tail of playing an action card: interactive choices (cancellable,
+// BEFORE anything commits), then the play animation, then the engine step.
+async function resolveAndPlayActionCard(card, action) {
+  const { state } = env;
+  const name = cardName(card);
   const oppPlayer = state.players[AI_IDX];
   const oppHasCards = !oppPlayer.checkProtected && oppPlayer.hand.length > 0;
 
   if (name === 'chopsticks' && oppHasCards) {
     const victimIdx = await showPickOppCardModal(
-      'Steal a Card',
-      "Choose a face-down card from opponent's hand",
+      'Chopsticks — Steal a Card',
+      "Pick one of your opponent's face-down cards",
       oppPlayer.hand.length
     );
-    if (victimIdx !== null) env._nextActionChoices = { victimCardIdx: victimIdx };
+    if (victimIdx === null) { render(); return; } // cancelled — card stays in hand
+    env._nextActionChoices = { victimCardIdx: victimIdx };
   }
 
   if (name === 'sake' && oppHasCards) {
     const victimIdx = await showPickOppCardModal(
-      'Take a Card',
-      "Choose a card to take from opponent (face-down)",
+      'Sake — Step 1 of 2',
+      'Take a face-down card from your opponent',
       oppPlayer.hand.length
     );
+    if (victimIdx === null) { render(); return; }
+    // Exclude the sake card itself — engine removes it before looking up returnCardIdx,
+    // so the filtered indices map 1:1 to the post-removal hand.
     const handForReturn = state.players[PLAYER_IDX].hand.filter(
       c => !(!c.isSushi && c.actionCard === 'sake')
     );
     const returnIdx = await showSakeReturnModal(handForReturn);
-    if (victimIdx !== null && returnIdx !== null) {
-      env._nextActionChoices = { victimCardIdx: victimIdx, returnCardIdx: returnIdx };
-    }
+    if (returnIdx === null) { render(); return; }
+    env._nextActionChoices = { victimCardIdx: victimIdx, returnCardIdx: returnIdx };
   }
 
+  await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name);
+
+  // Capture hand IDs before step so we can find the gained card afterwards
   const preHandIds = (name === 'chopsticks' || name === 'sake')
     ? new Set(state.players[PLAYER_IDX].hand.map(c => c.cardId))
+    : null;
+  const forkPreIds = name === 'fork'
+    ? new Set(state.players[AI_IDX].hand.map(c => c.cardId))
     : null;
 
   env.step(action);
   if (env.state.gameOver) { endGame(); return; }
 
+  // Reveal the card gained from the opponent
   if (preHandIds) {
     const gained = env.state.players[PLAYER_IDX].hand.find(c => !preHandIds.has(c.cardId));
     if (gained) await revealCardAnimation(gained, 'You received');
   }
+  if (forkPreIds) await revealForkLoss(AI_IDX, forkPreIds);
 
   await drainWasabiEvents();
 
@@ -878,70 +1159,8 @@ async function onActionCardClick(card, player) {
     return;
   }
 
-  const name = cardName(card);
-  await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name);
-
-  // Interactive choices for select-from-opponent actions
-  const oppPlayer = state.players[AI_IDX];
-  const oppHasCards = !oppPlayer.checkProtected && oppPlayer.hand.length > 0;
-
-  if (name === 'chopsticks' && oppHasCards) {
-    const idx = await showPickOppCardModal(
-      'Steal a Card',
-      "Choose a face-down card from opponent's hand",
-      oppPlayer.hand.length
-    );
-    if (idx !== null) env._nextActionChoices = { victimCardIdx: idx };
-  }
-
   // Fork: auto-picks most expensive card — no player choice needed
-
-  if (name === 'sake' && oppHasCards) {
-    const victimIdx = await showPickOppCardModal(
-      'Take a Card',
-      "Choose a card to take from opponent (face-down)",
-      oppPlayer.hand.length
-    );
-    // Exclude the sake card itself — engine removes it before looking up returnCardIdx,
-    // so the filtered indices map 1:1 to the post-removal hand.
-    const handForReturn = state.players[PLAYER_IDX].hand.filter(
-      c => !(!c.isSushi && c.actionCard === 'sake')
-    );
-    const returnIdx = await showSakeReturnModal(handForReturn);
-    if (victimIdx !== null && returnIdx !== null) {
-      env._nextActionChoices = { victimCardIdx: victimIdx, returnCardIdx: returnIdx };
-    }
-  }
-
-  // Capture hand IDs before step so we can find the gained card afterwards
-  const preHandIds = (name === 'chopsticks' || name === 'sake')
-    ? new Set(state.players[PLAYER_IDX].hand.map(c => c.cardId))
-    : null;
-
-  env.step(action);
-  if (env.state.gameOver) { endGame(); return; }
-
-  // Reveal the card gained from the opponent
-  if (preHandIds) {
-    const gained = env.state.players[PLAYER_IDX].hand.find(c => !preHandIds.has(c.cardId));
-    if (gained) await revealCardAnimation(gained, 'You received');
-  }
-
-  await drainWasabiEvents();
-
-  if (env.state.phase === Phase.CHEFS_CHOICE_SELECT_CARDS && env.state.currentPlayer === PLAYER_IDX) {
-    render();
-    const drawn = env.state.chefChoiceDrawnCards ?? [];
-    if (drawn.length > 0) await revealCardsAnimation(drawn, "Chef's Choice — you drew:");
-    showChefsChoiceModal();
-    return;
-  }
-  if (env.state.phase === Phase.PHASE_DISCARD && env.state.currentPlayer === PLAYER_IDX) {
-    render(); showDiscardModal(); return;
-  }
-
-  render();
-  postRenderCheck();
+  await resolveAndPlayActionCard(card, action);
 }
 
 // ── Pass / Check handler ──────────────────────────────────────────────────────
@@ -985,6 +1204,7 @@ function showChefsChoiceModal() {
   chefsSelectedIndices = [];
   $('chefs-modal-instr').textContent = 'Select 2 cards to return to the deck';
   $('chefs-select-count').textContent = '0 / 2 selected';
+  $('btn-chefs-confirm').disabled = true;
 
   const cardsEl = $('chefs-modal-cards');
   cardsEl.innerHTML = '';
@@ -1013,38 +1233,39 @@ function onChefsModalCardClick(idx, cardsEl) {
   }
 
   $('chefs-select-count').textContent = `${chefsSelectedIndices.length} / 2 selected`;
+  $('btn-chefs-confirm').disabled = chefsSelectedIndices.length !== 2;
+}
 
-  if (chefsSelectedIndices.length === 2) {
-    const sorted = [...chefsSelectedIndices].sort((a, b) => b - a);
-    setTimeout(() => {
-      env.step(sorted[0]);
-      env.step(sorted[1]);
+function onChefsConfirm() {
+  if (!env || env.state.phase !== Phase.CHEFS_CHOICE_SELECT_CARDS) return;
+  if (chefsSelectedIndices.length !== 2) return;
 
-      chefsSelectedIndices = [];
-      $('chefs-modal-bg').hidden = true;
+  const sorted = [...chefsSelectedIndices].sort((a, b) => b - a);
+  env.step(sorted[0]);
+  env.step(sorted[1]);
 
-      if (env.state.phase === Phase.CHEFS_CHOICE_SELECT_POSITIONS) {
-        render();
-        showChefsPositionModal();
-        return;
-      }
+  chefsSelectedIndices = [];
+  $('chefs-modal-bg').hidden = true;
 
-      if (env.state.gameOver) { endGame(); return; }
-      render();
-      postRenderCheck();
-      scheduleTurn();
-    }, 300);
+  if (env.state.phase === Phase.CHEFS_CHOICE_SELECT_POSITIONS) {
+    render();
+    showChefsPositionModal();
+    return;
   }
+
+  if (env.state.gameOver) { endGame(); return; }
+  render();
+  postRenderCheck();
+  scheduleTurn();
 }
 
 // ── Chef's Choice position modal ──────────────────────────────────────────────
 function showChefsPositionModal() {
   const cards  = env.state.chefChoiceSelectedCards;
   const deckLen = env.state.deck.length;
-  const positions = [0, 0];
+  const positions = [0, 0]; // 0 = top of deck, deckLen = bottom
 
-  const instr = $('chefs-pos-modal-instr');
-  instr.textContent = `Deck has ${deckLen} card${deckLen !== 1 ? 's' : ''}. 0 = top, ${deckLen} = bottom.`;
+  $('chefs-pos-modal-instr').textContent = 'Choose where each card goes back in the deck.';
 
   const body = $('chefs-pos-modal-body');
   body.innerHTML = '';
@@ -1058,36 +1279,33 @@ function showChefsPositionModal() {
     thumb.style.cssText = `pointer-events:none; flex-shrink:0; width:60px; height:84px;`;
     thumb.querySelector('.card__img').style.cssText = 'width:100%;height:100%;object-fit:cover;';
 
-    const sliderWrap = document.createElement('div');
-    sliderWrap.className = 'chefs-pos-slider';
+    const pickWrap = document.createElement('div');
+    pickWrap.className = 'chefs-pos-slider';
 
-    const labelEl = document.createElement('label');
-    labelEl.textContent = `Card ${i + 1}: ${CARD_DISPLAY_NAMES[cardName(card)] ?? cardName(card)}`;
-    labelEl.htmlFor = `chefs-pos-slider-${i}`;
+    const labelEl = document.createElement('span');
+    labelEl.className = 'chefs-pos-label';
+    labelEl.textContent = CARD_DISPLAY_NAMES[cardName(card)] ?? cardName(card);
 
-    const input = document.createElement('input');
-    input.type = 'range'; input.min = '0';
-    input.max = String(deckLen); input.value = '0';
-    input.id = `chefs-pos-slider-${i}`;
-    input.style.width = '100%';
-    input.setAttribute('accent-color', 'var(--peri-deep)');
+    const seg = document.createElement('div');
+    seg.className = 'seg';
+    const topBtn = document.createElement('button');
+    topBtn.className = 'seg__btn seg__btn--active';
+    topBtn.textContent = 'Top of deck';
+    const bottomBtn = document.createElement('button');
+    bottomBtn.className = 'seg__btn';
+    bottomBtn.textContent = 'Bottom';
 
-    const display = document.createElement('span');
-    display.className = 'chefs-pos-display';
-    display.textContent = '0 (top)';
+    const select = pos => {
+      positions[i] = pos === 'top' ? 0 : deckLen;
+      topBtn.classList.toggle('seg__btn--active', pos === 'top');
+      bottomBtn.classList.toggle('seg__btn--active', pos === 'bottom');
+    };
+    topBtn.addEventListener('click', () => select('top'));
+    bottomBtn.addEventListener('click', () => select('bottom'));
+    seg.append(topBtn, bottomBtn);
 
-    const hint = document.createElement('span');
-    hint.className = 'chefs-pos-hint';
-    hint.textContent = `0 = top of deck, ${deckLen} = bottom`;
-
-    input.addEventListener('input', () => {
-      const v = parseInt(input.value, 10);
-      positions[i] = v;
-      display.textContent = v === 0 ? '0 (top)' : v === deckLen ? `${v} (bottom)` : String(v);
-    });
-
-    sliderWrap.append(labelEl, input, display, hint);
-    row.append(thumb, sliderWrap);
+    pickWrap.append(labelEl, seg);
+    row.append(thumb, pickWrap);
     body.appendChild(row);
   });
 
@@ -1107,7 +1325,7 @@ function showChefsPositionModal() {
   $('chefs-pos-modal-bg').hidden = false;
 }
 
-// ── Pick opponent card modal ──────────────────────────────────────────────────
+// ── Pick opponent card modal (cancellable — cancel aborts playing the card) ──
 function showPickOppCardModal(title, instr, numCards) {
   return new Promise(resolve => {
     $('pick-opp-modal-title').textContent = title;
@@ -1116,35 +1334,55 @@ function showPickOppCardModal(title, instr, numCards) {
     const container = $('pick-opp-modal-cards');
     container.innerHTML = '';
 
+    const finish = result => {
+      $('pick-opp-modal-bg').hidden = true;
+      document.removeEventListener('keydown', onKeydown);
+      $('btn-pick-opp-cancel').onclick = null;
+      $('pick-opp-modal-bg').onclick = null;
+      resolve(result);
+    };
+    const onKeydown = e => { if (e.key === 'Escape') finish(null); };
+
     for (let i = 0; i < numCards; i++) {
       const back = makeCardBackEl(true); // large back card
       back.style.cursor = 'pointer';
-      back.addEventListener('click', () => {
-        $('pick-opp-modal-bg').hidden = true;
-        resolve(i);
-      });
+      back.addEventListener('click', () => finish(i));
       container.appendChild(back);
     }
+
+    $('btn-pick-opp-cancel').onclick = () => finish(null);
+    $('pick-opp-modal-bg').onclick = e => {
+      if (e.target === $('pick-opp-modal-bg')) finish(null);
+    };
+    document.addEventListener('keydown', onKeydown);
 
     $('pick-opp-modal-bg').hidden = false;
   });
 }
 
-// ── Sake return modal ─────────────────────────────────────────────────────────
+// ── Sake return modal (cancellable — cancel aborts the whole Sake play) ──────
 function showSakeReturnModal(hand) {
   return new Promise(resolve => {
     const container = $('sake-return-modal-cards');
     container.innerHTML = '';
 
+    const finish = result => {
+      $('sake-return-modal-bg').hidden = true;
+      document.removeEventListener('keydown', onKeydown);
+      $('btn-sake-return-cancel').onclick = null;
+      resolve(result);
+    };
+    const onKeydown = e => { if (e.key === 'Escape') finish(null); };
+
     hand.forEach((card, idx) => {
       const el = makeCardEl(card);
       el.style.cursor = 'pointer';
-      el.addEventListener('click', () => {
-        $('sake-return-modal-bg').hidden = true;
-        resolve(idx);
-      });
+      el.addEventListener('click', () => finish(idx));
       container.appendChild(el);
     });
+
+    $('btn-sake-return-cancel').onclick = () => finish(null);
+    document.addEventListener('keydown', onKeydown);
 
     $('sake-return-modal-bg').hidden = false;
   });
@@ -1345,35 +1583,38 @@ async function runSyncAiTurn() {
     }
 
     if (phase === Phase.PHASE_1 || phase === Phase.PHASE_3) {
+      let forkPreIds = null;
       if (action !== 0) {
         const aiPlayer = env.state.players[AI_IDX];
         const playable = aiPlayer.hand.filter(c => !c.isSushi && !PASSIVE_ACTION_CARDS.has(c.actionCard));
         const card = playable[action - 1];
         if (card) {
           const name = cardName(card);
-          setPhaseMsg(`Chef plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
+          if (name === 'fork') forkPreIds = new Set(env.state.players[PLAYER_IDX].hand.map(c => c.cardId));
+          setPhaseMsg(`Opponent plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
           await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 2800);
         }
       } else {
-        setPhaseMsg('Chef skips action…');
+        setPhaseMsg('Opponent skips action…');
         await delay(1500);
       }
       env.step(action);
       render();
+      if (forkPreIds) await revealForkLoss(PLAYER_IDX, forkPreIds);
 
     } else if (phase === Phase.PHASE_2) {
       const hIdx = Math.floor(action / MAX_BELT_SIZE);
       const bIdx = action % MAX_BELT_SIZE;
 
       // Step 1: lift and highlight the chosen hand card
-      setPhaseMsg('Chef picks a card from hand…');
+      setPhaseMsg('Opponent picks a card from hand…');
       const handCards = document.querySelectorAll('#opp-hand .card-back');
       const handEl = handCards[hIdx];
       if (handEl) handEl.classList.add('card-back--ai-pick');
       await delay(2500);
 
       // Step 2: highlight the belt target with a pulsing ring
-      setPhaseMsg('Chef targets a belt card…');
+      setPhaseMsg('Opponent targets a belt card…');
       const beltCards = document.querySelectorAll('#belt-slots .card');
       const targetEl = beltCards[bIdx];
       if (targetEl) targetEl.classList.add('card--ai-target');
@@ -1392,7 +1633,7 @@ async function runSyncAiTurn() {
       }
 
     } else if (phase === Phase.PHASE_4) {
-      setPhaseMsg('Chef ends their turn…');
+      setPhaseMsg('Opponent ends their turn…');
       await delay(1800);
       const prevBelt = capturePreStepBelt();
       env.step(action);
@@ -1438,13 +1679,15 @@ async function runMctsAiTurn() {
 
     if (phase === Phase.PHASE_1 || phase === Phase.PHASE_3) {
       const action = greedy.chooseAction(env, legal);
+      let forkPreIds = null;
       if (action !== 0) {
         const aiPlayer = env.state.players[AI_IDX];
         const playable = aiPlayer.hand.filter(c => !c.isSushi && !PASSIVE_ACTION_CARDS.has(c.actionCard));
         const card = playable[action - 1];
         if (card) {
           const name = cardName(card);
-          setPhaseMsg(`Chef plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
+          if (name === 'fork') forkPreIds = new Set(env.state.players[PLAYER_IDX].hand.map(c => c.cardId));
+          setPhaseMsg(`Opponent plays ${CARD_DISPLAY_NAMES[name] ?? name}…`, true);
           await playActionCardAnimation(name, CARD_DISPLAY_NAMES[name] ?? name, 2000);
         }
       } else {
@@ -1452,6 +1695,7 @@ async function runMctsAiTurn() {
       }
       env.step(action);
       render();
+      if (forkPreIds) await revealForkLoss(PLAYER_IDX, forkPreIds);
 
     } else if (phase === Phase.PHASE_2) {
       showThinking(true);
@@ -1461,13 +1705,13 @@ async function runMctsAiTurn() {
       const hIdx = Math.floor(action / MAX_BELT_SIZE);
       const bIdx = action % MAX_BELT_SIZE;
 
-      setPhaseMsg('Chef picks a card from hand…');
+      setPhaseMsg('Opponent picks a card from hand…');
       const handCards = document.querySelectorAll('#opp-hand .card-back');
       const handEl = handCards[hIdx];
       if (handEl) handEl.classList.add('card-back--ai-pick');
       await delay(1200);
 
-      setPhaseMsg('Chef targets a belt card…');
+      setPhaseMsg('Opponent targets a belt card…');
       const beltCards = document.querySelectorAll('#belt-slots .card');
       const targetEl = beltCards[bIdx];
       if (targetEl) targetEl.classList.add('card--ai-target');
@@ -1505,11 +1749,33 @@ async function runMctsAiTurn() {
   postRenderCheck();
 }
 
+// Never let a broken/slow worker wedge the game: requests are id-tagged so a
+// stale reply can't resolve a newer turn, and errors/timeouts fall back to
+// the greedy agent.
+const MCTS_TIMEOUT_MS = 20000;
+let mctsReqId = 0;
+
 function getMctsAction(stateSnapshot, legalActions) {
   return new Promise(resolve => {
-    mctsWorker.onmessage = e => {
-      if (e.data.type === 'result') resolve(e.data.action);
+    const reqId = ++mctsReqId;
+    let settled = false;
+    const finish = action => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(action);
     };
+    const fallback = () => {
+      if (settled) return;
+      toast('AI is unavailable — using a quicker strategy');
+      finish(new SimpleGreedyAgent().chooseAction(env, legalActions));
+    };
+    const timer = setTimeout(fallback, MCTS_TIMEOUT_MS);
+
+    mctsWorker.onmessage = e => {
+      if (e.data.type === 'result' && e.data.reqId === reqId) finish(e.data.action);
+    };
+    mctsWorker.onerror = fallback;
     mctsWorker.postMessage({
       type: 'choose',
       envState: stateSnapshot,
@@ -1519,12 +1785,24 @@ function getMctsAction(stateSnapshot, legalActions) {
       nSimulations: mctsNSims,
       timeBudgetMs: 0,
       agentType: selectedAgent,
+      reqId,
     });
   });
 }
 
+let thinkingTimer = null;
 function showThinking(show) {
   aiThinking = show;
+  clearTimeout(thinkingTimer);
+  if (show) {
+    // Only surface the overlay when the AI actually takes a moment
+    thinkingTimer = setTimeout(() => {
+      if (aiThinking) $('thinking-overlay').hidden = false;
+    }, 350);
+  } else {
+    thinkingTimer = null;
+    $('thinking-overlay').hidden = true;
+  }
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1763,6 +2041,17 @@ function revealCardsAnimation(cards, header = "You drew:") {
   });
 }
 
+// ── Fork result — show which card the victim lost ─────────────────────────────
+async function revealForkLoss(victimIdx, preIds) {
+  const vp = env.state.players[victimIdx];
+  const lostId = [...preIds].find(id => !vp.hand.some(c => c.cardId === id));
+  if (lostId == null) return;
+  const lost = env.state.trash.find(c => c.cardId === lostId);
+  if (lost) {
+    await revealCardAnimation(lost, victimIdx === PLAYER_IDX ? 'Fork! You lost' : 'Fork! Opponent lost');
+  }
+}
+
 // ── Wasabi events — drain and show notifications ──────────────────────────────
 async function drainWasabiEvents() {
   if (!env?.state?.wasabiEvents?.length) return;
@@ -1857,6 +2146,7 @@ function startGame() {
   phase3Selection = null;
   beltDealIn = null;
   beltDealAnimating = false;
+  deckLowWarned = false;
   lastScores[PLAYER_IDX] = -1;
   lastScores[AI_IDX] = -1;
   _lastPhaseMsg = '';
@@ -1869,6 +2159,7 @@ function startGame() {
   $('sake-return-modal-bg').hidden = true;
   $('discard-modal-bg').hidden   = true;
   $('trash-modal-bg').hidden     = true;
+  $('sets-modal-bg').hidden      = true;
   $('menu-bg').hidden            = true;
   $('thinking-overlay').hidden   = true;
 
@@ -1988,7 +2279,12 @@ function setupNewGameScreen() {
 }
 
 function requestExternalStartScreen() {
-  window.parent?.postMessage({ type: 'omakase-game-change-opponent' }, window.location.origin);
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'omakase-game-change-opponent' }, window.location.origin);
+  } else {
+    // Standalone (no wrapping site) — go back to the in-game start screen
+    showScreen('screen-newgame');
+  }
 }
 
 function setupGameScreen() {
@@ -2003,6 +2299,15 @@ function setupGameScreen() {
   $('btn-new-game-menu').addEventListener('click', () => {
     $('menu-bg').hidden = true;
     requestExternalStartScreen();
+  });
+
+  $('btn-chefs-confirm').addEventListener('click', onChefsConfirm);
+
+  // Sets progress modal
+  $('btn-sets').addEventListener('click', showSetsModal);
+  $('btn-close-sets-modal').addEventListener('click', () => { $('sets-modal-bg').hidden = true; });
+  $('sets-modal-bg').addEventListener('click', e => {
+    if (e.target === $('sets-modal-bg')) $('sets-modal-bg').hidden = true;
   });
 
   // Trash pile click → open viewer
@@ -2023,6 +2328,13 @@ function setupGameScreen() {
 function setupGameOverScreen() {
   $('btn-rematch').addEventListener('click',     startGame);
   $('btn-change-opp').addEventListener('click', requestExternalStartScreen);
+
+  // Re-lay-out the score breakdown when the device rotates on the results screen
+  window.addEventListener('resize', () => {
+    if (env && $('screen-gameover').classList.contains('screen--active')) {
+      renderBreakdown();
+    }
+  });
 }
 
 setupNewGameScreen();
