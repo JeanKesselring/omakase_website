@@ -50,6 +50,27 @@ export function OmakaseFramePlay({ t }) {
     return () => window.removeEventListener('message', onMessage);
   }, []);
 
+  // Immersive play: while a match runs, `game-active` on <body> hides the site
+  // chrome and pins the frame fullscreen on small screens (see styles.css).
+  // The platform back gesture exits the match instead of leaving the page.
+  useEffect(() => {
+    document.body.classList.toggle('game-active', started);
+    if (!started) return undefined;
+
+    window.history.pushState({ omakaseMatch: true }, '');
+    function onPopState() {
+      setStarted(false);
+    }
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      document.body.classList.remove('game-active');
+      window.removeEventListener('popstate', onPopState);
+      if (window.history.state?.omakaseMatch) {
+        window.history.back();
+      }
+    };
+  }, [started]);
+
   function startMatch() {
     setFrameKey((value) => value + 1);
     setStarted(true);

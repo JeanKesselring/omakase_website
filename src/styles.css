@@ -1522,6 +1522,38 @@ h1 {
   background: #fff9f1;
 }
 
+/* ── Immersive play on small screens ──────────────────────────────────────
+   While a match runs (body.game-active), the game owns the whole viewport:
+   no site header, no toolbar, no page scroll. The iframe then equals the
+   device viewport, so the game's own phone/landscape layouts activate. */
+@media (max-width: 1024px) {
+  body.game-active {
+    overflow: hidden;
+  }
+
+  body.game-active .site-header,
+  body.game-active .play-frame-toolbar,
+  body.game-active .site-footer {
+    display: none;
+  }
+
+  body.game-active .play-frame-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: block;
+    min-height: 0;
+    height: 100vh;
+    height: 100dvh;
+    background: #fff9f1;
+  }
+
+  body.game-active .play-game-frame {
+    height: 100%;
+    min-height: 0;
+  }
+}
+
 .play-table {
   display: grid;
   gap: 1rem;
