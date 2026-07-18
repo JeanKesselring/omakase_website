@@ -1553,10 +1553,10 @@ function showTrashModal() {
   const container = $('trash-modal-cards');
   container.innerHTML = '';
 
-  // Show most recent first
+  // Show most recent first; cards stay interactive so press-and-hold inspects them
   [...trash].reverse().forEach(card => {
     const el = makeCardEl(card, {});
-    el.style.pointerEvents = 'none';
+    el.style.cursor = 'zoom-in';
     container.appendChild(el);
   });
 
@@ -2454,6 +2454,7 @@ if (URL_PARAMS.get('debug') === '1') {
     get env() { return env; },
     render,
     showChefsPositionModal,
+    showChefsChoiceModal,
   };
 }
 
