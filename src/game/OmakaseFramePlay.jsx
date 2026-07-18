@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 import favicon from '../../Assets/Web/favicon.png';
 import fattyTunaCard from '../../Assets/Web/Sushi_cards/fatty_tuna.png';
 import salmonRoeCard from '../../Assets/Web/Sushi_cards/salmon_roe.png';
@@ -43,13 +43,32 @@ export function OmakaseFramePlay({ t }) {
     function onMessage(event) {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'omakase-game-change-opponent') {
+        setChromeShown(false);
         setStarted(false);
+      }
+      if (event.data?.type === 'omakase-game-chrome') {
+        setChromeShown(!!event.data.show);
       }
     }
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, []);
+
+  // Swipe-down in the game reveals the real site header + match toolbar;
+  // swipe-up hides them. The header is outside this component, so the state
+  // is mirrored as a body class, and its measured height positions the toolbar.
+  useEffect(() => {
+    const open = started && chromeShown;
+    document.body.classList.toggle('chrome-open', open);
+    if (open) {
+      const header = document.querySelector('.site-header');
+      if (header) {
+        document.documentElement.style.setProperty('--revealed-header-h', `${header.offsetHeight}px`);
+      }
+    }
+    return () => document.body.classList.remove('chrome-open');
+  }, [started, chromeShown]);
 
   // Immersive play: while a match runs, `game-active` on <body> hides the site
   // chrome and pins the frame fullscreen on small screens (see styles.css).
@@ -121,7 +140,7 @@ export function OmakaseFramePlay({ t }) {
           </div>
         </>
       ) : (
-        <div className={`play-frame-shell ${chromeShown ? 'chrome-open' : ''}`}>
+        <div className="play-frame-shell">
           <div className="play-frame-toolbar">
             <button className="button secondary small" onClick={exitMatch}>
               {copy.choose}
@@ -130,21 +149,7 @@ export function OmakaseFramePlay({ t }) {
               <RotateCcw size={16} />
               {copy.restart}
             </button>
-            <button
-              className="button secondary small chrome-close"
-              onClick={() => setChromeShown(false)}
-              aria-label="Hide menu"
-            >
-              <ChevronUp size={16} />
-            </button>
           </div>
-          <button
-            className="chrome-handle"
-            onClick={() => setChromeShown(true)}
-            aria-label="Show menu"
-          >
-            <ChevronDown size={14} />
-          </button>
           <iframe
             key={gameUrl}
             src={gameUrl}

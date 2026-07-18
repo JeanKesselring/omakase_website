@@ -481,6 +481,7 @@ function startDrag(e) {
   const { el, legal } = dragCandidate;
   dragActive = true;
   clearTimeout(lpTimer); lpTimer = null;
+  postChromeMessage(false); // picking up a card resumes play — tuck the chrome away
 
   const r = el.getBoundingClientRect();
   dragGhost = el.cloneNode(true);
@@ -616,9 +617,10 @@ document.addEventListener('pointermove', e => {
   if (dragCandidate && !dragActive) {
     const dx = e.clientX - dragCandidate.startX;
     const dy = e.clientY - dragCandidate.startY;
-    // Vertical intent starts a drag; horizontal is the hand scrolling
-    if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) startDrag(e);
-    else if (Math.abs(dx) > 16) dragCandidate = null;
+    // Upward intent starts a card drag (the belt is above); horizontal is the
+    // hand scrolling; downward is the reveal-chrome swipe — never a drag.
+    if (dy < -12 && -dy > Math.abs(dx)) startDrag(e);
+    else if (Math.abs(dx) > 16 || dy > 16) dragCandidate = null;
   }
 }, true);
 
@@ -637,6 +639,54 @@ document.addEventListener('pointercancel', e => {
   if (dragActive) endDrag(e, true);
   else dragCandidate = null;
 }, true);
+
+// ── Reveal-chrome swipe (embedded play) ──────────────────────────────────────
+// Swipe down anywhere on the table asks the parent page to show the site
+// header + match toolbar; swipe up hides them again. Mirrors the browser's
+// own "scroll up to get the header back" instinct.
+const SWIPE_CHROME_MIN = 56;
+let chromeSwipeStart = null; // { x, y, target } | null
+
+function postChromeMessage(show) {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'omakase-game-chrome', show }, window.location.origin);
+  }
+}
+
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) { chromeSwipeStart = null; return; }
+  // Dialogs keep their native vertical scrolling — no swipe tracking there
+  if (e.target.closest?.('.modal-bg, .card-popover, .card-viewer, .action-play-overlay, .deck-strip__stack')) {
+    chromeSwipeStart = null;
+    return;
+  }
+  chromeSwipeStart = { x: e.clientX, y: e.clientY };
+}, true);
+
+// Non-passive: vertical-intent gestures on the table are ours (card drag,
+// chrome swipe) — preventDefault stops the browser from claiming them with
+// a pointercancel. Horizontal moves stay native (hand/belt scrolling).
+document.addEventListener('touchmove', e => {
+  if (!chromeSwipeStart || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = t.clientX - chromeSwipeStart.x;
+  const dy = t.clientY - chromeSwipeStart.y;
+  if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) e.preventDefault();
+}, { passive: false, capture: true });
+
+document.addEventListener('pointerup', e => {
+  const start = chromeSwipeStart;
+  chromeSwipeStart = null;
+  if (!start || dragActive) return;
+
+  const dx = e.clientX - start.x;
+  const dy = e.clientY - start.y;
+  if (Math.abs(dy) >= SWIPE_CHROME_MIN && Math.abs(dy) > Math.abs(dx) * 1.4) {
+    postChromeMessage(dy > 0);
+  }
+}, true);
+
+document.addEventListener('pointercancel', () => { chromeSwipeStart = null; }, true);
 
 // Swallow the click that follows a long-press or a drag
 document.addEventListener('click', e => {
