@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Play, RotateCcw } from 'lucide-react';
 import favicon from '../../Assets/Web/favicon.png';
 import fattyTunaCard from '../../Assets/Web/Sushi_cards/fatty_tuna.png';
 import salmonRoeCard from '../../Assets/Web/Sushi_cards/salmon_roe.png';
@@ -31,6 +31,7 @@ export function OmakaseFramePlay({ t }) {
   const copy = playText(t);
   const [difficulty, setDifficulty] = useState('advanced');
   const [started, setStarted] = useState(false);
+  const [chromeShown, setChromeShown] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
   const selectedDifficulty = difficulties.find((item) => item.id === difficulty) || difficulties[1];
   const gameUrl = useMemo(() => {
@@ -73,7 +74,13 @@ export function OmakaseFramePlay({ t }) {
 
   function startMatch() {
     setFrameKey((value) => value + 1);
+    setChromeShown(false);
     setStarted(true);
+  }
+
+  function exitMatch() {
+    setChromeShown(false);
+    setStarted(false);
   }
 
   return (
@@ -114,16 +121,30 @@ export function OmakaseFramePlay({ t }) {
           </div>
         </>
       ) : (
-        <div className="play-frame-shell">
+        <div className={`play-frame-shell ${chromeShown ? 'chrome-open' : ''}`}>
           <div className="play-frame-toolbar">
-            <button className="button secondary small" onClick={() => setStarted(false)}>
+            <button className="button secondary small" onClick={exitMatch}>
               {copy.choose}
             </button>
             <button className="button primary small" onClick={startMatch}>
               <RotateCcw size={16} />
               {copy.restart}
             </button>
+            <button
+              className="button secondary small chrome-close"
+              onClick={() => setChromeShown(false)}
+              aria-label="Hide menu"
+            >
+              <ChevronUp size={16} />
+            </button>
           </div>
+          <button
+            className="chrome-handle"
+            onClick={() => setChromeShown(true)}
+            aria-label="Show menu"
+          >
+            <ChevronDown size={14} />
+          </button>
           <iframe
             key={gameUrl}
             src={gameUrl}

@@ -1532,9 +1532,23 @@ h1 {
   }
 
   body.game-active .site-header,
-  body.game-active .play-frame-toolbar,
   body.game-active .site-footer {
     display: none;
+  }
+
+  /* Toolbar becomes a pull-down shade: hidden above the screen, slid in by
+     the top-edge handle. "Choose your opponent" exits immersive play. */
+  body.game-active .play-frame-toolbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1002;
+    padding-top: max(0.45rem, env(safe-area-inset-top));
+    transform: translateY(-110%);
+    transition: transform 220ms ease;
+    box-shadow: 0 4px 0 var(--ink);
+  }
+  body.game-active .chrome-open .play-frame-toolbar {
+    transform: translateY(0);
   }
 
   body.game-active .play-frame-shell {
@@ -1552,6 +1566,39 @@ h1 {
     height: 100%;
     min-height: 0;
   }
+
+  /* Top-edge handle: the visible way out of fullscreen play */
+  body.game-active .chrome-handle {
+    display: flex;
+    position: fixed;
+    top: max(0px, env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1003;
+    width: 64px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    background: rgba(32, 33, 38, 0.55);
+    color: #fff9f1;
+    border: 0;
+    border-radius: 0 0 10px 10px;
+    padding: 0 0 2px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  body.game-active .chrome-open .chrome-handle {
+    display: none;
+  }
+  body.game-active .chrome-close {
+    display: inline-flex;
+  }
+}
+
+/* Hidden outside immersive play */
+.chrome-handle,
+.chrome-close {
+  display: none;
 }
 
 .play-table {
