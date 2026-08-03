@@ -222,5 +222,19 @@
     "sellsOnline": false,
     "logoId": "poromagia",
     "notes": "Game shop in Helsinki. Website blocks automated logo lookup."
+  },
+  {
+    "id": "mind-games-melbourne",
+    "name": "Mind Games Melbourne",
+    "country": "Australia",
+    "city": "Melbourne",
+    "address": "145 Swanston Street, Melbourne VIC 3000",
+    "lat": -37.8143391,
+    "lng": 144.9657907,
+    "websiteUrl": "https://www.mindgamesmelbourne.com",
+    "productUrl": null,
+    "sellsOnline": false,
+    "logoId": "mind-games-melbourne",
+    "notes": "Board game and miniatures shop in central Melbourne."
   }
 ]

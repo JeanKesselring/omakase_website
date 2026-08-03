@@ -59,6 +59,7 @@ import alaskaLogo from '../Assets/Web/retailers/alaska-libreria.png';
 import gamesLogo from '../Assets/Web/retailers/games-kobenhavn.png';
 import gudbergNergerLogo from '../Assets/Web/retailers/gudberg-nerger.png';
 import poromagiaLogo from '../Assets/Web/retailers/poromagia.png';
+import mindGamesLogo from '../Assets/Web/retailers/mind-games-melbourne.png';
 import rulebookPdf from '../Rules.pdf';
 import shops from './data/shops.json';
 import { dictionaries, localeLabels } from './i18n.js';
@@ -67,6 +68,8 @@ import { OmakaseFramePlay } from './game/OmakaseFramePlay.jsx';
 
 const pages = ['home', 'rules', 'stores', 'play'];
 const tutorialUrl = 'https://www.youtube.com/watch?v=lOHlmx0hAdM';
+const pressUrl =
+  'https://bellevue.nzz.ch/stil-design/design-architektur/schoene-spiele-der-zeitvertreib-fuer-strand-und-badi-ld.1934947';
 
 const actionCardImages = {
   Ginger: gingerCard,
@@ -217,7 +220,8 @@ const retailerLogos = {
   'alaska-libreria': alaskaLogo,
   'games-kobenhavn': gamesLogo,
   'gudberg-nerger': gudbergNergerLogo,
-  poromagia: poromagiaLogo
+  poromagia: poromagiaLogo,
+  'mind-games-melbourne': mindGamesLogo
 };
 
 export function App({ route, navigate }) {
@@ -340,10 +344,33 @@ function HomePage({ t, go }) {
           </div>
         </div>
       </section>
+      <PressQuote t={t} />
       <ProductMedia t={t} />
       <PartnerRetailers t={t} />
       <HomeRulesPreview t={t} go={go} />
     </>
+  );
+}
+
+function PressQuote({ t }) {
+  return (
+    <section className="section press-section" aria-label={t.press.eyebrow}>
+      <figure className="press-quote">
+        <p className="eyebrow">{t.press.eyebrow}</p>
+        <blockquote lang="de">
+          <p className="press-quote-lead">{t.press.quote}</p>
+          <p className="press-quote-line">{t.press.quoteLine}</p>
+        </blockquote>
+        {t.press.translation && <p className="press-translation">{t.press.translation}</p>}
+        <figcaption>
+          <cite>{t.press.source}</cite>
+          <a href={pressUrl} target="_blank" rel="noreferrer">
+            {t.press.link}
+            <ExternalLink size={15} />
+          </a>
+        </figcaption>
+      </figure>
+    </section>
   );
 }
 
