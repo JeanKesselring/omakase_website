@@ -4,6 +4,8 @@ import favicon from '../Assets/Web/favicon.png';
 
 const defaultCenter = [46.8182, 8.2275];
 const markerSize = 36;
+const cartoKey = import.meta.env.VITE_CARTO_BASEMAP_KEY?.trim();
+const osmAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -12,6 +14,16 @@ function escapeHtml(value = '') {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function getRetailerUrl(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 function createMarkerIcon(isSelected = false) {
@@ -27,9 +39,11 @@ function createMarkerIcon(isSelected = false) {
 function getPopupHtml(shop, labels) {
   const location = [shop.city, shop.country].filter(Boolean).join(', ');
   const address = [shop.address, location].filter(Boolean).map(escapeHtml).join('<br>');
+  const productUrl = getRetailerUrl(shop.productUrl);
+  const websiteUrl = getRetailerUrl(shop.websiteUrl);
   const links = [
-    shop.productUrl && `<a class="shop-popup-button primary" href="${escapeHtml(shop.productUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.buyOnline)}</a>`,
-    shop.websiteUrl && `<a class="shop-popup-button" href="${escapeHtml(shop.websiteUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.website)}</a>`
+    productUrl && `<a class="shop-popup-button primary" href="${escapeHtml(productUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.buyOnline)}</a>`,
+    websiteUrl && `<a class="shop-popup-button" href="${escapeHtml(websiteUrl)}" target="_blank" rel="noreferrer">${escapeHtml(labels.website)}</a>`
   ].filter(Boolean).join('');
 
   return `
@@ -67,11 +81,18 @@ export function StoreMap({
       scrollWheelZoom: true
     }).setView(defaultCenter, 7);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 20,
-      subdomains: 'abcd',
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-    }).addTo(mapRef.current);
+    const tiles = cartoKey
+      ? L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`, {
+          maxZoom: 20,
+          subdomains: 'abcd',
+          attribution: `${osmAttribution} &copy; <a href="https://carto.com/attributions">CARTO</a>`
+        })
+      : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: osmAttribution,
+          referrerPolicy: 'strict-origin-when-cross-origin'
+        });
+    tiles.addTo(mapRef.current);
 
     // Leaflet caches the container size at init; recompute when it changes
     // so tiles don't render cropped.

@@ -1,16 +1,19 @@
 # Omakase Website
 
-React + Vite website for the Omakase card game.
+React website for the Omakase card game, bundled with esbuild.
 
 ## Commands
 
 ```sh
-npm install
+npm ci --ignore-scripts
 npm run dev
 npm run build
+npm run preview
 ```
 
-The production build writes `dist/index.html` and copies it to `dist/404.html` for GitHub Pages deep-link fallback.
+The development server uses `http://127.0.0.1:5173` and reloads on changes to bundled source. The production build writes `dist/index.html` and `dist/404.html` for GitHub Pages deep links. Preview serves the built files at `http://127.0.0.1:4173`.
+
+For deployment under a subpath, set `VITE_BASE_PATH` to an absolute URL path such as `/omakase/` when building and previewing.
 
 ## Stores
 
@@ -35,6 +38,8 @@ Stores are maintained in `src/data/shops.json`. Add entries with this shape:
 
 Entries with `lat` and `lng` appear as markers on the map. Entries with `productUrl` show a buy-online button.
 Retailer logos are imported from `Assets/Web/retailers/`; set `logoId` to the matching imported key in `src/App.jsx`.
+
+The map uses [OpenStreetMap standard tiles](https://operations.osmfoundation.org/policies/tiles/) by default. To use the original CARTO style, request a [CARTO Basemaps key](https://carto.com/basemaps/apikey/) and set `VITE_CARTO_BASEMAP_KEY` in your local environment or as a GitHub Actions repository variable before building. The key is visible in browser tile requests. Use a dedicated basemap key and restrict it to the site origins in the CARTO dashboard.
 
 ## Media
 

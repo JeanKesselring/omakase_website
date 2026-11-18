@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Omakase — A sushi card game</title>
   <link rel="icon" type="image/png" href="../cards/favicon.png">
@@ -9,13 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,500..600&family=Inter+Tight:wght@400;500;600;700&family=Shippori+Mincho:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script>
-    // When embedded with ?autostart=1, never paint the internal start screen —
-    // the game module switches straight to the table once it loads.
-    if (new URLSearchParams(location.search).get('autostart') === '1') {
-      document.documentElement.classList.add('autostart');
-    }
-  </script>
+  <script src="autostart.js"></script>
 </head>
 <body>
 

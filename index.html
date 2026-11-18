@@ -2,17 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://tile.openstreetmap.org https://a.basemaps.cartocdn.com https://b.basemaps.cartocdn.com https://c.basemaps.cartocdn.com https://d.basemaps.cartocdn.com; object-src 'none'; base-uri 'none'; form-action 'none'" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="Omakase is a tactile sushi card game about collecting valuable dishes, completing sets, and timing action cards."
     />
     <meta name="theme-color" content="#f76f82" />
-    <link rel="icon" type="image/png" href="/Assets/Web/favicon.png" />
+    <link rel="icon" type="image/png" href="{{base}}cards/favicon.png" />
+    <!-- site stylesheet -->
     <title>Omakase</title>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <!-- site scripts -->
   </body>
 </html>

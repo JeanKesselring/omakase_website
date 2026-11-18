@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Play, RotateCcw } from 'lucide-react';
 import favicon from '../../Assets/Web/favicon.png';
 import fattyTunaCard from '../../Assets/Web/Sushi_cards/fatty_tuna.png';
@@ -33,6 +33,7 @@ export function OmakaseFramePlay({ t }) {
   const [started, setStarted] = useState(false);
   const [chromeShown, setChromeShown] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
+  const frameRef = useRef(null);
   const selectedDifficulty = difficulties.find((item) => item.id === difficulty) || difficulties[1];
   const gameUrl = useMemo(() => {
     const base = import.meta.env.BASE_URL || '/';
@@ -41,7 +42,7 @@ export function OmakaseFramePlay({ t }) {
 
   useEffect(() => {
     function onMessage(event) {
-      if (event.origin !== window.location.origin) return;
+      if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return;
       if (event.data?.type === 'omakase-game-change-opponent') {
         setChromeShown(false);
         setStarted(false);
@@ -152,6 +153,7 @@ export function OmakaseFramePlay({ t }) {
           </div>
           <iframe
             key={gameUrl}
+            ref={frameRef}
             src={gameUrl}
             title="Omakase game"
             className="play-game-frame"

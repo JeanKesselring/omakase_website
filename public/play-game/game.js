@@ -27,7 +27,8 @@ const ACTION_EFFECTS = {
 // ── Game state ────────────────────────────────────────────────────────────────
 let env = null;
 let selectedAgent = 'mcts2';
-let mctsNSims = parseInt(URL_PARAMS.get('sims') || '2000', 10);
+const requestedSimulations = Number(URL_PARAMS.get('sims'));
+let mctsNSims = [500, 2000, 6000].includes(requestedSimulations) ? requestedSimulations : 2000;
 let agent = null;
 let mctsWorker = null;
 let aiThinking = false;
